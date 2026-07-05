@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desert Storm - Registration</title>
+    <style>
+        :root {
+            --bg-color: #0c1017;
+            --card-bg: #121824;
+            --input-bg: #172030;
+            --yellow: #ffc824;
+            --text-main: #ffffff;
+            --text-muted: #62728d;
+            --team-a-color: #ff3b30;
+            --team-a-bg: rgba(255, 59, 48, 0.15);
+            --team-b-color: #007aff;
+            --team-b-bg: rgba(0, 122, 255, 0.15);
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px 12px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .yellow-text {
+            color: var(--yellow);
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin: 4px 0 12px 0;
+            font-size: 0.95rem;
+        }
+
+        .badges-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .info-badge {
+            background-color: #171e2c;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #a0aec0;
+            border: 1px solid #232d42;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid;
+        }
+
+        .status-badge.online {
+            color: #2ecc71;
+            border-color: rgba(46, 204, 113, 0.4);
+            background: rgba(46, 204, 113, 0.08);
+        }
+
+        .status-badge.offline {
+            color: #ff3b30;
+            border-color: rgba(255, 59, 48, 0.4);
+            background: rgba(255, 59, 48, 0.08);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #1c2436;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .input-hint {
+            font-size: 0.75rem;
+            color: var(--yellow);
+            margin-top: -2px;
+            opacity: 0.9;
+        }
+
+        input[type="text"], input[type="password"] {
+            background-color: var(--input-bg);
+            border: 1px solid #253147;
+            padding: 14px;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]::placeholder, input[type="password"]::placeholder {
+            color: #43516b;
+            font-size: 0.9rem;
+        }
+
+        .team-selector {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-team {
+            flex: 1;
+            background-color: var(--input-bg);
+            border: 1px solid #253147;
+            color: white;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-team.active[data-team="A"] {
+            border-color: var(--team-a-color);
+            background-color: var(--team-a-bg);
+        }
+
+        .btn-team.active[data-team="B"] {
+            border-color: var(--team-b-color);
+            background-color: var(--team-b-bg);
+        }
+
+        .btn-register {
+            width: 100%;
+            background-color: var(--yellow);
+            border: none;
+            color: #000000;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-register:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ranking-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .diamond {
+            color: var(--yellow);
+            font-size: 1.1rem;
+        }
+
+        .btn-refresh {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .ranking-sub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .btn-excel {
+            background: none;
+            border: 1px solid #313d56;
+            color: var(--yellow);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .team-counters {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .counter-box {
+            flex: 1;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .team-a-box { border: 1px solid rgba(255, 59, 48, 0.4); background: rgba(255, 59, 48, 0.05); }
+        .team-b-box { border: 1px solid rgba(0, 122, 255, 0.4); background: rgba(0, 122, 255, 0.05); }
+
+        .counter-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .team-a-box .counter-label { color: var(--team-a-color); }
+        .team-b-box .counter-label { color: var(--team-b-color); }
+
+        .counter-value {
+            font-size: 1.7rem;
+            font-weight: bold;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .filter-btn {
+            background-color: #1c2436;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background-color: #313d56;
+            color: white;
+        }
+
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 20px 0;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--yellow);
+            width: 24px;
+        }
+
+        .player-info-block {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .player-name-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .p-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .team-badge {
+            font-size: 0.6rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .team-badge.team-A {
+            color: var(--team-a-color);
+            background-color: var(--team-a-bg);
+        }
+
+        .team-badge.team-B {
+            color: var(--team-b-color);
+            background-color: var(--team-b-bg);
+        }
+
+        .p-power {
+            font-weight: bold;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 3px;
+            background-color: #171f2e;
+            border-radius: 2px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.team-A { background-color: var(--team-a-color); }
+        .progress-bar.team-B { background-color: var(--team-b-color); }
+
+        .btn-admin {
+            background: none;
+            border: none;
+            color: #43516b;
+            font-size: 0.85rem;
+            margin: 20px auto 0 auto;
+            display: block;
+            cursor: pointer;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .admin-panel {
+            display: none;
+            background: #141923;
+            border: 1px solid #ffc824;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .admin-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--yellow);
+            margin: 0 0 12px 0;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .admin-input-group label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .admin-input-group input {
+            background-color: var(--bg-color);
+            border: 1px solid #253147;
+            padding: 10px;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-admin-action {
+            width: 100%;
+            background-color: #222e44;
+            color: white;
+            border: 1px solid #31425f;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .btn-danger {
+            width: 100%;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ff3b30;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 4px;
+            font-size: 0.9rem;
+        }
+
+        /* ===== Modal customizado (substitui prompt/alert/confirm nativos,
+           que ficam bloqueados em WebViews como o Spck Editor) ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--card-bg);
+            border: 1px solid #253147;
+            border-radius: 14px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            box-sizing: border-box;
+        }
+
+        .modal-message {
+            font-size: 0.95rem;
+            margin: 0 0 14px 0;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .modal-box input {
+            background-color: var(--input-bg);
+            border: 1px solid #253147;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+            outline: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .modal-btn.cancel {
+            background-color: #222e44;
+            color: white;
+        }
+
+        .modal-btn.confirm {
+            background-color: var(--yellow);
+            color: #000;
+        }
+
+        .modal-btn.single {
+            background-color: var(--yellow);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Cabeçalho -->
+        <header>
+            <h1>DESERT <span class="yellow-text">STORM</span></h1>
+            <p class="subtitle">Troop Power Registration</p>
+            <div class="badges-row">
+                <span class="info-badge">Ho3s Alliance</span>
+                <span class="info-badge" id="dateBadge">📅 Week of 10/07/2026</span>
+                <span class="status-badge offline" id="connectionBadge">🔌 Conectando...</span>
+            </div>
+        </header>
+
+        <!-- Formulário de Registo -->
+        <div class="card form-card">
+            <form id="registrationForm">
+                <div class="input-group">
+                    <label>YOUR NAME</label>
+                    <input type="text" id="playerName" placeholder="Enter your exact in-game name..." required>
+                    <span class="input-hint">⚠️ Atenção: Escreva o nome exatamente como está na aliança!</span>
+                </div>
+
+                <div class="input-group">
+                    <label>TEAM</label>
+                    <div class="team-selector">
+                        <button type="button" class="btn-team active" data-team="A">Team A</button>
+                        <button type="button" class="btn-team" data-team="B">Team B</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>TROOP POWER</label>
+                    <input type="text" id="troopPower" placeholder="e.g. 54M or 1.2B" required>
+                </div>
+
+                <button type="submit" class="btn-register" id="registerBtn">REGISTER</button>
+            </form>
+        </div>
+
+        <!-- Secção de Ranking -->
+        <div class="card ranking-card">
+            <div class="ranking-header">
+                <h2><span class="diamond">◊</span> OVERALL RANKING</h2>
+                <button class="btn-refresh" type="button" onclick="location.reload()">🔄</button>
+            </div>
+            
+            <div class="ranking-sub-header">
+                <span id="playerCount">0 players</span>
+                <button class="btn-excel" type="button" id="exportBtn">📥 EXPORT EXCEL</button>
+            </div>
+
+            <div class="team-counters">
+                <div class="counter-box team-a-box">
+                    <span class="counter-label">TEAM A</span>
+                    <span class="counter-value" id="countTeamA">0</span>
+                </div>
+                <div class="counter-box team-b-box">
+                    <span class="counter-label">TEAM B</span>
+                    <span class="counter-value" id="countTeamB">0</span>
+                </div>
+            </div>
+
+            <div class="filters-row">
+                <button class="filter-btn active" type="button" data-filter="all">All</button>
+                <button class="filter-btn" type="button" data-filter="A">Team A</button>
+                <button class="filter-btn" type="button" data-filter="B">Team B</button>
+            </div>
+
+            <div id="rankingList" class="ranking-list"></div>
+
+            <!-- Área Administrativa Protegida com PIN -->
+            <button class="btn-admin" type="button" id="adminToggle">🛡️ Admin area</button>
+            <div class="admin-panel" id="adminPanel">
+                <p class="admin-title">PAINEL DE CONTROLO DA ALIANÇA</p>
+                
+                <div class="admin-input-group">
+                    <label>DATA DA NOVA SEMANA</label>
+                    <input type="text" id="newDateInput" placeholder="e.g. Week of 17/07/2026">
+                </div>
+                <button class="btn-admin-action" type="button" id="saveWeekBtn">⚙️ GUARDAR E LIMPAR PARA NOVA SEMANA</button>
+                
+                <div style="border-top: 1px solid #1c2436; margin: 12px 0;"></div>
+                
+                <button class="btn-danger" type="button" id="clearAllBtn">⚠️ APAGAR TODOS OS REGISTOS ATUAIS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal genérico: usado para PIN, confirmações e avisos -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <p class="modal-message" id="modalMessage"></p>
+            <input type="password" id="modalInput" style="display:none;">
+            <div class="modal-buttons" id="modalButtons"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (compat, funciona direto via <script> sem build tools) -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+
+    <script>
+        console.log("Alliance Ranking Started");
+
+        const ADMIN_PIN = "2026";
+
+        // ===== Configuração do Firebase (projeto desert-storm-ho3s) =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVEYlOdV64jD3-asVuLoSmi4KZ_O1KlRE",
+            authDomain: "desert-storm-ho3s.firebaseapp.com",
+            databaseURL: "https://desert-storm-ho3s-default-rtdb.firebaseio.com",
+            projectId: "desert-storm-ho3s",
+            storageBucket: "desert-storm-ho3s.firebasestorage.app",
+            messagingSenderId: "92441567190",
+            appId: "1:92441567190:web:794ef2ad5313fb36200e77",
+            measurementId: "G-R3G9S4LBK6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const playersRef = db.ref('players');
+        const configRef = db.ref('config');
+
+        let currentWeekDate = "Week of 10/07/2026";
+        let players = []; // Array de {key, nome, time, poderOriginal}
+
+        let selectedTeam = "A";
+        let currentFilter = "all";
+        let adminMode = false;
+
+        // ===== Indicador de conexão =====
+        const connectionBadge = document.getElementById('connectionBadge');
+        db.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                connectionBadge.innerText = "🟢 Sincronizado";
+                connectionBadge.classList.remove('offline');
+                connectionBadge.classList.add('online');
+            } else {
+                connectionBadge.innerText = "🔌 Conectando...";
+                connectionBadge.classList.remove('online');
+                connectionBadge.classList.add('offline');
+            }
+        });
+
+        // ===== Transforma um nome em uma chave válida do Firebase =====
+        function nameToKey(name) {
+            return encodeURIComponent(name.trim().toLowerCase()).replace(/[.#$/\[\]]/g, '_');
+        }
+
+        function parsePower(powerStr) {
+            if (!powerStr) return 0;
+            let clean = powerStr.toString().toUpperCase().replace(/\s/g, '').replace(',', '.');
+            let num = parseFloat(clean);
+            if (isNaN(num)) return 0;
+            
+            if (clean.includes('B')) return num * 1000000000;
+            if (clean.includes('M')) return num * 1000000;
+            return num;
+        }
+
+        // ===== Escuta em tempo real os dados de configuração (data da semana) =====
+        configRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.weekDate) {
+                currentWeekDate = data.weekDate;
+            }
+            document.getElementById('dateBadge').innerText = "📅 " + currentWeekDate;
+        });
+
+        // ===== Escuta em tempo real a lista de jogadores =====
+        playersRef.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            players = Object.keys(data).map(key => ({
+                key: key,
+                nome: data[key].nome,
+                time: data[key].time,
+                poderOriginal: data[key].poderOriginal
+            }));
+            renderRanking();
+        });
+
+        /* ===================================================
+           MODAL CUSTOMIZADO
+           =================================================== */
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalInput = document.getElementById('modalInput');
+        const modalButtons = document.getElementById('modalButtons');
+
+        function closeModal() {
+            modalOverlay.classList.remove('active');
+            modalInput.style.display = 'none';
+            modalInput.value = '';
+        }
+
+        function customAlert(message) {
+            modalMessage.innerText = message;
+            modalInput.style.display = 'none';
+            modalButtons.innerHTML = '';
+
+            const okBtn = document.createElement('button');
+            okBtn.className = 'modal-btn single';
+            okBtn.innerText = 'OK';
+            okBtn.onclick = closeModal;
+            modalButtons.appendChild(okBtn);
+
+            modalOverlay.classList.add('active');
+        }
+
+        function customConfirm(message, onConfirm) {
+            modalMessage.innerText = message;
+            modalInput.style.display = 'none';
+            modalButtons.innerHTML = '';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn cancel';
+            cancelBtn.innerText = 'Cancelar';
+            cancelBtn.onclick = closeModal;
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'modal-btn confirm';
+            confirmBtn.innerText = 'Confirmar';
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+
+            modalButtons.appendChild(cancelBtn);
+            modalButtons.appendChild(confirmBtn);
+
+            modalOverlay.classList.add('active');
+        }
+
+        function customPrompt(message, onSubmit) {
+            modalMessage.innerText = message;
+            modalInput.style.display = 'block';
+            modalInput.value = '';
+            modalInput.type = 'password';
+            modalInput.placeholder = 'PIN';
+            modalButtons.innerHTML = '';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn cancel';
+            cancelBtn.innerText = 'Cancelar';
+            cancelBtn.onclick = closeModal;
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'modal-btn confirm';
+            confirmBtn.innerText = 'Entrar';
+            confirmBtn.onclick = () => {
+                const value = modalInput.value;
+                closeModal();
+                onSubmit(value);
+            };
+
+            modalButtons.appendChild(cancelBtn);
+            modalButtons.appendChild(confirmBtn);
+
+            modalOverlay.classList.add('active');
+            setTimeout(() => modalInput.focus(), 100);
+        }
+
+        document.querySelectorAll('.btn-team').forEach(button => {
+            button.addEventListener('click', (e) => {
+                document.querySelectorAll('.btn-team').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedTeam = e.target.getAttribute('data-team');
+            });
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.getAttribute('data-filter');
+                renderRanking();
+            });
+        });
+
+        // Submissão do Formulário — grava direto no Firebase
+        document.getElementById('registrationForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nameInput = document.getElementById('playerName');
+            const powerInput = document.getElementById('troopPower');
+            const registerBtn = document.getElementById('registerBtn');
+
+            const targetName = nameInput.value.trim();
+            const targetPower = powerInput.value.trim();
+
+            if(targetName === "" || targetPower === "") return;
+
+            const key = nameToKey(targetName);
+            const isUpdate = players.some(p => p.key === key);
+
+            registerBtn.disabled = true;
+            registerBtn.innerText = "SALVANDO...";
+
+            playersRef.child(key).set({
+                nome: targetName,
+                time: selectedTeam,
+                poderOriginal: targetPower
+            }).then(() => {
+                registerBtn.disabled = false;
+                registerBtn.innerText = "REGISTER";
+                nameInput.value = "";
+                powerInput.value = "";
+                if (isUpdate) {
+                    customAlert(`Dados de "${targetName}" atualizados com sucesso!`);
+                }
+            }).catch((error) => {
+                registerBtn.disabled = false;
+                registerBtn.innerText = "REGISTER";
+                customAlert("Erro ao salvar: " + error.message);
+            });
+        });
+
+        // Ativação da área de Administração
+        document.getElementById('adminToggle').addEventListener('click', () => {
+            if (!adminMode) {
+                customPrompt("Insira o PIN de acesso da Área de Admin:", (pin) => {
+                    if (pin === ADMIN_PIN) {
+                        adminMode = true;
+                        document.getElementById('adminPanel').classList.add('active');
+                        document.getElementById('newDateInput').value = currentWeekDate;
+                        renderRanking();
+                    } else if (pin !== null && pin !== '') {
+                        customAlert("PIN Incorreto! Acesso negado.");
+                    }
+                });
+            } else {
+                adminMode = false;
+                document.getElementById('adminPanel').classList.remove('active');
+                renderRanking();
+            }
+        });
+
+        document.getElementById('saveWeekBtn').addEventListener('click', () => {
+            const newDate = document.getElementById('newDateInput').value.trim();
+            if(newDate === "") {
+                customAlert("Por favor, introduza uma data válida!");
+                return;
+            }
+            
+            customConfirm(`Tem a certeza que quer mudar a data para "${newDate}" e LIMPAR todos os jogadores para iniciar a nova semana?`, () => {
+                configRef.set({ weekDate: newDate });
+                playersRef.remove();
+
+                adminMode = false;
+                document.getElementById('adminPanel').classList.remove('active');
+                renderRanking();
+                customAlert("Nova semana configurada com sucesso e lista limpa!");
+            });
+        });
+
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            customConfirm("Tem a certeza absoluta que quer apagar todos os jogadores registados atualmente?", () => {
+                playersRef.remove();
+            });
+        });
+
+        window.deletePlayer = function(key) {
+            const playerToDelete = players.find(p => p.key === key);
+            if (playerToDelete) {
+                customConfirm(`Deseja remover o jogador "${playerToDelete.nome}" do ranking?`, () => {
+                    playersRef.child(key).remove();
+                });
+            }
+        }
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if(players.length === 0) {
+                customAlert("Não existem dados para exportar de momento!");
+                return;
+            }
+            
+            let exportList = [...players].sort((a, b) => parsePower(b.poderOriginal) - parsePower(a.poderOriginal));
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFFPosicao,Nome,Equipa,Poder de Tropa\n";
+            
+            exportList.forEach((p, index) => {
+                csvContent += `${index + 1},"${p.nome}",Team ${p.time},${p.poderOriginal}\n`;
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Desert_Storm_${currentWeekDate.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        function renderRanking() {
+            const listContainer = document.getElementById('rankingList');
+            if (!listContainer) return;
+            listContainer.innerHTML = "";
+
+            const countA = players.filter(p => p.time === "A").length;
+            const countB = players.filter(p => p.time === "B").length;
+            
+            document.getElementById('countTeamA').innerText = countA;
+            document.getElementById('countTeamB').innerText = countB;
+            document.getElementById('playerCount').innerText = `${players.length} players`;
+
+            if (players.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">Ainda não há jogadores registados.</div>';
+                return;
+            }
+
+            let filteredPlayers = [...players];
+
+            if (currentFilter !== "all") {
+                filteredPlayers = filteredPlayers.filter(p => p.time === currentFilter);
+            }
+
+            filteredPlayers.sort((a, b) => parsePower(b.poderOriginal) - parsePower(a.poderOriginal));
+
+            const maxPowerGlobal = players.length > 0 
+                ? Math.max(...players.map(p => parsePower(p.poderOriginal))) 
+                : 1;
+
+            filteredPlayers.forEach((player, index) => {
+                const powerNumeric = parsePower(player.poderOriginal);
+                const percentage = maxPowerGlobal > 0 ? (powerNumeric / maxPowerGlobal) * 100 : 0;
+                
+                const deleteHtml = adminMode ? `<button class="delete-btn" onclick="deletePlayer('${player.key}')">❌</button>` : '';
+
+                const itemHtml = `
+                    <div class="ranking-item">
+                        <span class="rank-number">${index + 1}</span>
+                        <div class="player-info-block">
+                            <div class="player-name-row">
+                                <span class="p-name">
+                                    ${player.nome}
+                                    <span class="team-badge team-${player.time}">TEAM ${player.time}</span>
+                                </span>
+                                <span class="p-power">${player.poderOriginal} ${deleteHtml}</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar team-${player.time}" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += itemHtml;
+            });
+        }
+    </script>
+</body>
+</html>
