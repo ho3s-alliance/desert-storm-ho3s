@@ -101,6 +101,27 @@
             border: 1px solid #1c2436;
         }
 
+        .card.locked {
+            opacity: 0.6;
+        }
+
+        .locked-banner {
+            display: none;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.4);
+            color: #ff6b60;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .locked-banner.active {
+            display: block;
+        }
+
         .input-group {
             display: flex;
             flex-direction: column;
@@ -134,6 +155,11 @@
             box-sizing: border-box;
         }
 
+        input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         input[type="text"]::placeholder, input[type="password"]::placeholder {
             color: #43516b;
             font-size: 0.9rem;
@@ -154,6 +180,11 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        .btn-team:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-team.active[data-team="A"] {
@@ -182,6 +213,19 @@
         .btn-register:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            background-color: #43516b;
+        }
+
+        .btn-withdraw {
+            width: 100%;
+            background: none;
+            border: none;
+            color: #62728d;
+            font-size: 0.8rem;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 10px 0 0 0;
+            margin: 0;
         }
 
         .ranking-header {
@@ -438,6 +482,27 @@
             margin-bottom: 10px;
         }
 
+        .btn-toggle-lock {
+            width: 100%;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .btn-toggle-lock.open {
+            background-color: #1f7a3d;
+            color: white;
+        }
+
+        .btn-toggle-lock.closed {
+            background-color: #ff3b30;
+            color: white;
+        }
+
         .btn-danger {
             width: 100%;
             background-color: #ff3b30;
@@ -554,7 +619,8 @@
         </header>
 
         <!-- Formulário de Registo -->
-        <div class="card form-card">
+        <div class="card form-card" id="formCard">
+            <div class="locked-banner" id="lockedBanner">🔒 Registro fechado pelo administrador no momento.</div>
             <form id="registrationForm">
                 <div class="input-group">
                     <label>YOUR NAME</label>
@@ -577,6 +643,7 @@
 
                 <button type="submit" class="btn-register" id="registerBtn">REGISTER</button>
             </form>
+            <button type="button" class="btn-withdraw" id="withdrawBtn">Desistir da inscrição</button>
         </div>
 
         <!-- Secção de Ranking -->
@@ -614,6 +681,8 @@
             <button class="btn-admin" type="button" id="adminToggle">🛡️ Admin area</button>
             <div class="admin-panel" id="adminPanel">
                 <p class="admin-title">PAINEL DE CONTROLO DA ALIANÇA</p>
+
+                <button class="btn-toggle-lock open" type="button" id="toggleLockBtn">🔓 REGISTRO ABERTO (toque para fechar)</button>
                 
                 <div class="admin-input-group">
                     <label>DATA DA NOVA SEMANA</label>
@@ -664,6 +733,7 @@
         const configRef = db.ref('config');
 
         let currentWeekDate = "Week of 10/07/2026";
+        let registrationOpen = true; // padrão: aberto, até o Firebase dizer o contrário
         let players = []; // Array de {key, nome, time, poderOriginal}
 
         let selectedTeam = "A";
@@ -700,13 +770,52 @@
             return num;
         }
 
-        // ===== Escuta em tempo real os dados de configuração (data da semana) =====
+        // ===== Aplica o estado de trava do registro na interface =====
+        function applyLockState() {
+            const formCard = document.getElementById('formCard');
+            const lockedBanner = document.getElementById('lockedBanner');
+            const registerBtn = document.getElementById('registerBtn');
+            const playerName = document.getElementById('playerName');
+            const troopPower = document.getElementById('troopPower');
+            const teamBtns = document.querySelectorAll('.btn-team');
+            const toggleLockBtn = document.getElementById('toggleLockBtn');
+
+            if (registrationOpen) {
+                formCard.classList.remove('locked');
+                lockedBanner.classList.remove('active');
+                registerBtn.disabled = false;
+                playerName.disabled = false;
+                troopPower.disabled = false;
+                teamBtns.forEach(b => b.disabled = false);
+                if (toggleLockBtn) {
+                    toggleLockBtn.innerText = "🔓 REGISTRO ABERTO (toque para fechar)";
+                    toggleLockBtn.classList.remove('closed');
+                    toggleLockBtn.classList.add('open');
+                }
+            } else {
+                formCard.classList.add('locked');
+                lockedBanner.classList.add('active');
+                registerBtn.disabled = true;
+                playerName.disabled = true;
+                troopPower.disabled = true;
+                teamBtns.forEach(b => b.disabled = true);
+                if (toggleLockBtn) {
+                    toggleLockBtn.innerText = "🔒 REGISTRO FECHADO (toque para abrir)";
+                    toggleLockBtn.classList.remove('open');
+                    toggleLockBtn.classList.add('closed');
+                }
+            }
+        }
+
+        // ===== Escuta em tempo real os dados de configuração (data da semana + trava) =====
         configRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.weekDate) {
                 currentWeekDate = data.weekDate;
             }
+            registrationOpen = data && typeof data.registrationOpen === 'boolean' ? data.registrationOpen : true;
             document.getElementById('dateBadge').innerText = "📅 " + currentWeekDate;
+            applyLockState();
         });
 
         // ===== Escuta em tempo real a lista de jogadores =====
@@ -802,8 +911,38 @@
             setTimeout(() => modalInput.focus(), 100);
         }
 
+        function customPromptText(message, onSubmit) {
+            modalMessage.innerText = message;
+            modalInput.style.display = 'block';
+            modalInput.value = '';
+            modalInput.type = 'text';
+            modalInput.placeholder = 'Seu nome no jogo';
+            modalButtons.innerHTML = '';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn cancel';
+            cancelBtn.innerText = 'Cancelar';
+            cancelBtn.onclick = closeModal;
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'modal-btn confirm';
+            confirmBtn.innerText = 'Continuar';
+            confirmBtn.onclick = () => {
+                const value = modalInput.value;
+                closeModal();
+                onSubmit(value);
+            };
+
+            modalButtons.appendChild(cancelBtn);
+            modalButtons.appendChild(confirmBtn);
+
+            modalOverlay.classList.add('active');
+            setTimeout(() => modalInput.focus(), 100);
+        }
+
         document.querySelectorAll('.btn-team').forEach(button => {
             button.addEventListener('click', (e) => {
+                if (!registrationOpen) return;
                 document.querySelectorAll('.btn-team').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 selectedTeam = e.target.getAttribute('data-team');
@@ -822,6 +961,11 @@
         // Submissão do Formulário — grava direto no Firebase
         document.getElementById('registrationForm').addEventListener('submit', (e) => {
             e.preventDefault();
+
+            if (!registrationOpen) {
+                customAlert("O registro está fechado no momento. Fale com a administração da aliança.");
+                return;
+            }
             
             const nameInput = document.getElementById('playerName');
             const powerInput = document.getElementById('troopPower');
@@ -877,6 +1021,15 @@
             }
         });
 
+        // Botão de travar/destravar registro (só visível dentro do Admin)
+        document.getElementById('toggleLockBtn').addEventListener('click', () => {
+            const newState = !registrationOpen;
+            const actionText = newState ? "ABRIR" : "FECHAR";
+            customConfirm(`Tem a certeza que quer ${actionText} o registro para todos os jogadores?`, () => {
+                configRef.update({ registrationOpen: newState });
+            });
+        });
+
         document.getElementById('saveWeekBtn').addEventListener('click', () => {
             const newDate = document.getElementById('newDateInput').value.trim();
             if(newDate === "") {
@@ -885,7 +1038,7 @@
             }
             
             customConfirm(`Tem a certeza que quer mudar a data para "${newDate}" e LIMPAR todos os jogadores para iniciar a nova semana?`, () => {
-                configRef.set({ weekDate: newDate });
+                configRef.update({ weekDate: newDate });
                 playersRef.remove();
 
                 adminMode = false;
@@ -909,6 +1062,24 @@
                 });
             }
         }
+
+        // Permite que o próprio jogador remova sua inscrição, sem precisar do PIN de admin
+        document.getElementById('withdrawBtn').addEventListener('click', () => {
+            customPromptText("Digite seu nome exatamente como registado, para cancelar sua inscrição:", (name) => {
+                if (!name || name.trim() === "") return;
+                const key = nameToKey(name);
+                const player = players.find(p => p.key === key);
+                if (!player) {
+                    customAlert(`Não encontrei nenhum registo com o nome "${name}". Verifique a grafia exata.`);
+                    return;
+                }
+                customConfirm(`Confirma que deseja cancelar a inscrição de "${player.nome}"? Essa ação não pode ser desfeita.`, () => {
+                    playersRef.child(key).remove().then(() => {
+                        customAlert("Inscrição cancelada com sucesso.");
+                    });
+                });
+            });
+        });
 
         document.getElementById('exportBtn').addEventListener('click', () => {
             if(players.length === 0) {
@@ -987,6 +1158,8 @@
                 listContainer.innerHTML += itemHtml;
             });
         }
+
+        applyLockState();
     </script>
 </body>
 </html>
