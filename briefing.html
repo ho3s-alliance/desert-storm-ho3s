@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desert Storm - Team Briefing</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: #0f0d0a;
+    color: #f2ede2;
+    padding: 14px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  .team-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .team-toggle button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #333;
+    background: #1c1712;
+    color: #999;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .team-toggle button.active-a {
+    border-color: #e63946;
+    background: rgba(230,57,70,0.15);
+    color: #ff6b74;
+  }
+  .team-toggle button.active-b {
+    border-color: #3b82f6;
+    background: rgba(59,130,246,0.15);
+    color: #6ea8fb;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .header input {
+    background: transparent;
+    border: none;
+    color: #f2ede2;
+    font-weight: 900;
+    outline: none;
+  }
+  #teamName {
+    font-size: 26px;
+    color: #e63946;
+    width: 160px;
+  }
+  #allianceTag {
+    font-size: 13px;
+    color: #ccc;
+    font-weight: 400;
+    width: 160px;
+    border-bottom: 1px dashed #444;
+  }
+
+  /* Cards common */
+  .card {
+    background: #1c1712;
+    border: 1px solid #332a1f;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ffcc33;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Position grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .pos {
+    background: #14100c;
+    border: 1px solid #3a3025;
+    border-radius: 10px;
+    padding: 8px;
+  }
+  .pos .clock {
+    font-size: 10px;
+    font-weight: 800;
+    color: #ffcc33;
+    text-transform: uppercase;
+  }
+  .pos .building {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 6px;
+  }
+  .pos input {
+    width: 100%;
+    padding: 6px 8px;
+    margin-top: 4px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #0f0d0a;
+    color: #fff;
+    font-size: 12px;
+  }
+  .pos input.p1 { border-left: 3px solid #ffcc33; }
+  .pos input.p2 { border-left: 3px solid #4ade80; }
+  .pos.nuclear {
+    background: linear-gradient(135deg, #2a1414, #1c1712);
+    border-color: #7a2020;
+    grid-column: span 1;
+  }
+  .pos.nuclear .clock { color: #ff6b6b; }
+
+  /* Building effects */
+  .effect {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .effect .icon { color: #4ade80; flex-shrink: 0; }
+  .effect b { color: #ffe37a; }
+  .effect span.desc { color: #bbb; }
+
+  /* Strategy */
+  textarea, .squad-input {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #3a3025;
+    background: #14100c;
+    color: #f2ede2;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    font-family: inherit;
+  }
+  .squad-input { min-height: 40px; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 18px;
+  }
+  button.main-btn {
+    background: #ffcc33;
+    color: #1a1a1a;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    border: 2px solid #555;
+    color: #ddd;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #status {
+    text-align: center;
+    color: #4ade80;
+    font-size: 12px;
+    margin-top: 8px;
+    height: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="captureArea">
+
+  <div class="team-toggle">
+    <button id="btnTeamA" onclick="switchTeam('A')">TEAM A</button>
+    <button id="btnTeamB" onclick="switchTeam('B')">TEAM B</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <input id="teamName" value="TEAM A">
+      <br>
+      <input id="allianceTag" value="Ho3s">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🕒 Position Assignments</h2>
+    <div class="grid" id="posGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2>✅ Building Effects</h2>
+    <div class="effect"><span class="icon">✔</span><span><b>1, 2, 7, 8 — Hospital</b><br><span class="desc">Heal a unit</span></span></div>
+    <div class="effect"><span class="icon">✔</span><span><b>4, 10 — Refinery</b><br><span class="desc">Earn points</span></span></div>
+    <div class="effect"><span class="icon">✔</span><span><b>5 — Tech Center</b><br><span class="desc">Reduce base movement time</span></span></div>
+    <div class="effect"><span class="icon">✔</span><span><b>6 — Mercenary Station</b><br><span class="desc">Reduce opponent hero stats</span></span></div>
+    <div class="effect"><span class="icon">✔</span><span><b>11 — Information Center</b><br><span class="desc">Reduce base capture time</span></span></div>
+    <div class="effect"><span class="icon">✔</span><span><b>12 — Arsenal</b><br><span class="desc">Increase hero stats</span></span></div>
+  </div>
+
+  <div class="card">
+    <h2>🎯 Strategy</h2>
+    <textarea id="strategy">If a stronger enemy (Whale) enters your zone, capture another building first — then LEAVE.
+Once the Whale leaves, RETURN and RE-CAPTURE your zone.
+
+12 o'clock (Arsenal) & 6 o'clock (Mercenary): after 10 minutes, if you have spare capacity, send 1 player to support capture in those zones.</textarea>
+  </div>
+
+  <div class="card">
+    <h2>⚔️ Attack Freely Squad</h2>
+    <p style="font-size:11px;color:#999;margin:0 0 8px 0;">Monitors the whole map, captures weak zones, focuses on the Nuclear Silo</p>
+    <input class="squad-input" id="squad" placeholder="Names separated by commas">
+  </div>
+
+  <div class="controls">
+    <button class="main-btn" onclick="salvar()">💾 Save</button>
+    <button class="main-btn" onclick="gerarImagem()">📸 Generate Image</button>
+    <button class="secondary" onclick="limpar()">🗑️ Clear All</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const STORAGE_PREFIX = 'desert-storm-briefing-en-';
+let currentTeam = 'A';
+
+function storageKey() {
+  return STORAGE_PREFIX + currentTeam;
+}
+
+function defaultTeamName() {
+  return currentTeam === 'A' ? 'TEAM A' : 'TEAM B';
+}
+
+function updateToggleUI() {
+  document.getElementById('btnTeamA').className = currentTeam === 'A' ? 'active-a' : '';
+  document.getElementById('btnTeamB').className = currentTeam === 'B' ? 'active-b' : '';
+}
+
+function switchTeam(team) {
+  salvar(true); // save current team's data before switching
+  currentTeam = team;
+  updateToggleUI();
+  carregar();
+}
+
+const DEFAULT_STRATEGY = `If a stronger enemy (Whale) enters your zone, capture another building first — then LEAVE.
+Once the Whale leaves, RETURN and RE-CAPTURE your zone.
+
+12 o'clock (Arsenal) & 6 o'clock (Mercenary): after 10 minutes, if you have spare capacity, send 1 player to support capture in those zones.`;
+
+const POSITIONS = [
+  { id: 'p11', clock: '11 o\'clock', building: 'Information Center' },
+  { id: 'p12', clock: '12 o\'clock', building: 'Arsenal' },
+  { id: 'p1',  clock: '1 o\'clock',  building: 'Hospital 4' },
+  { id: 'p10', clock: '10 o\'clock', building: 'Oil/Petrol 1' },
+  { id: 'nuc', clock: '⬤ Center',   building: 'Nuclear Silo', nuclear: true, slots: 4 },
+  { id: 'p2',  clock: '2 o\'clock',  building: 'Hospital 2' },
+  { id: 'p8',  clock: '8 o\'clock',  building: 'Hospital 1' },
+  { id: 'p6',  clock: '6 o\'clock',  building: 'Mercenary Station' },
+  { id: 'p4',  clock: '4 o\'clock',  building: 'Oil/Petrol 2' },
+  { id: 'p7',  clock: '7 o\'clock',  building: 'Hospital 3' },
+  { id: 'p5',  clock: '5 o\'clock',  building: 'Tech Center' }
+];
+
+const grid = document.getElementById('posGrid');
+POSITIONS.forEach(pos => {
+  const slots = pos.slots || 2;
+  const el = document.createElement('div');
+  el.className = 'pos' + (pos.nuclear ? ' nuclear' : '');
+  let inputsHtml = '';
+  for (let i = 1; i <= slots; i++) {
+    const cls = i % 2 === 1 ? 'p1' : 'p2';
+    inputsHtml += `<input class="${cls}" id="input-${pos.id}-p${i}" placeholder="Player ${i}" oninput="salvar(true)">`;
+  }
+  el.innerHTML = `
+    <div class="clock">${pos.clock}</div>
+    <div class="building">${pos.building}</div>
+    ${inputsHtml}
+  `;
+  grid.appendChild(el);
+});
+
+function setStatus(msg, ok=true) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = ok ? '#4ade80' : '#f87171';
+  setTimeout(() => { el.textContent=''; }, 2000);
+}
+
+function carregar() {
+  // reset to defaults first
+  document.getElementById('teamName').value = defaultTeamName();
+  document.getElementById('allianceTag').value = 'Ho3s';
+  document.getElementById('strategy').value = DEFAULT_STRATEGY;
+  document.getElementById('squad').value = '';
+  POSITIONS.forEach(pos => {
+    const slots = pos.slots || 2;
+    for (let i = 1; i <= slots; i++) {
+      document.getElementById(`input-${pos.id}-p${i}`).value = '';
+    }
+  });
+
+  try {
+    const raw = localStorage.getItem(storageKey());
+    if (raw) {
+      const data = JSON.parse(raw);
+      document.getElementById('teamName').value = data.teamName || defaultTeamName();
+      document.getElementById('allianceTag').value = data.allianceTag || 'Ho3s';
+      document.getElementById('strategy').value = data.strategy || DEFAULT_STRATEGY;
+      document.getElementById('squad').value = data.squad || '';
+      POSITIONS.forEach(pos => {
+        const slots = pos.slots || 2;
+        for (let i = 1; i <= slots; i++) {
+          const key = `${pos.id}-p${i}`;
+          if (data[key]) document.getElementById(`input-${key}`).value = data[key];
+        }
+      });
+    }
+  } catch (e) {
+    console.log('No saved data yet.');
+  }
+}
+
+function salvar(silent) {
+  const data = {};
+  data.teamName = document.getElementById('teamName').value.trim();
+  data.allianceTag = document.getElementById('allianceTag').value.trim();
+  data.strategy = document.getElementById('strategy').value;
+  data.squad = document.getElementById('squad').value;
+  POSITIONS.forEach(pos => {
+    const slots = pos.slots || 2;
+    for (let i = 1; i <= slots; i++) {
+      const key = `${pos.id}-p${i}`;
+      data[key] = document.getElementById(`input-${key}`).value.trim();
+    }
+  });
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify(data));
+    if (!silent) setStatus('✅ Saved!');
+  } catch (e) {
+    if (!silent) setStatus('⚠️ Error saving.', false);
+  }
+}
+
+function limpar() {
+  if (confirm('Clear everything?')) {
+    POSITIONS.forEach(pos => {
+      const slots = pos.slots || 2;
+      for (let i = 1; i <= slots; i++) {
+        document.getElementById(`input-${pos.id}-p${i}`).value = '';
+      }
+    });
+    document.getElementById('squad').value = '';
+    salvar();
+  }
+}
+
+async function gerarImagem() {
+  setStatus('⏳ Generating image...');
+  try {
+    const el = document.getElementById('captureArea');
+    const canvas = await html2canvas(el, { backgroundColor: '#0f0d0a', scale: 2 });
+    canvas.toBlob(function(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'desert-storm-briefing.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setStatus('✅ Image generated! Check your downloads.');
+    }, 'image/png');
+  } catch (e) {
+    console.error(e);
+    setStatus('⚠️ Error generating image.', false);
+  }
+}
+
+document.getElementById('teamName').addEventListener('input', () => salvar(true));
+document.getElementById('allianceTag').addEventListener('input', () => salvar(true));
+document.getElementById('strategy').addEventListener('input', () => salvar(true));
+document.getElementById('squad').addEventListener('input', () => salvar(true));
+
+updateToggleUI();
+carregar();
+</script>
+
+</body>
+</html>
