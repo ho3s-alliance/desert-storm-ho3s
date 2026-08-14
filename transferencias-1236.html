@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Server 1236 — Transfer Registration</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --sand-950:#1a1410;
+    --sand-900:#241b14;
+    --sand-800:#332619;
+    --sand-700:#4a3826;
+    --sand-500:#8a6a44;
+    --sand-300:#c9a877;
+    --sand-100:#e8dcc4;
+    --sand-050:#f4ecd8;
+    --signal:#c4482e;
+    --signal-bright:#e8623f;
+    --ok:#5c8a5c;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(196,72,46,0.15), transparent),
+      linear-gradient(180deg, var(--sand-950), #100c09 60%);
+    color:var(--sand-100);
+    font-family:'Courier New', ui-monospace, monospace;
+    padding:0;
+  }
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.03;
+    background:repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px);
+  }
+  header{
+    position:relative; z-index:1;
+    padding:28px 20px 18px;
+    border-bottom:1px solid var(--sand-700);
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+  }
+  .brand-block{display:flex; flex-direction:column; gap:4px;}
+  .eyebrow{
+    font-size:0.7rem; letter-spacing:0.25em; text-transform:uppercase;
+    color:var(--signal-bright); font-weight:700;
+  }
+  h1{
+    font-family:'Georgia', 'Times New Roman', serif;
+    font-size:1.7rem; margin:0; letter-spacing:0.02em; color:var(--sand-050);
+    font-weight:400;
+  }
+  h1 b{color:var(--signal-bright); font-weight:700;}
+  .sub{font-size:0.78rem; color:var(--sand-500); margin-top:2px;}
+  .lang-switch{display:flex; gap:2px; background:var(--sand-900); border:1px solid var(--sand-700); border-radius:3px; padding:3px; height:fit-content;}
+  .lang-switch button{
+    background:none; border:none; color:var(--sand-500); font-family:inherit; font-size:0.72rem;
+    letter-spacing:0.08em; padding:6px 10px; cursor:pointer; border-radius:2px; font-weight:700;
+  }
+  .lang-switch button.active{background:var(--signal); color:#fff;}
+  main{position:relative; z-index:1; max-width:640px; margin:0 auto; padding:32px 20px 60px;}
+  .tabs{display:flex; gap:0; margin-bottom:28px; border-bottom:1px solid var(--sand-700);}
+  .tab{
+    flex:1; text-align:center; padding:12px 8px; background:none; border:none; cursor:pointer;
+    color:var(--sand-500); font-family:inherit; font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase;
+    font-weight:700; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s;
+  }
+  .tab.active{color:var(--sand-050); border-bottom-color:var(--signal);}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+  .field{margin-bottom:20px;}
+  label{display:block; font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--sand-300); margin-bottom:8px; font-weight:700;}
+  input[type=text], input[type=number]{
+    width:100%; background:var(--sand-900); border:1px solid var(--sand-700); color:var(--sand-050);
+    padding:12px 14px; font-family:inherit; font-size:0.95rem; border-radius:2px; outline:none; transition:border-color .15s;
+  }
+  input:focus{border-color:var(--signal-bright);}
+  .troop-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .troop-card{
+    border:1px solid var(--sand-700); background:var(--sand-900); border-radius:3px; padding:14px 8px;
+    text-align:center; cursor:pointer; transition:all .15s; position:relative;
+  }
+  .troop-card.selected{border-color:var(--signal-bright); background:rgba(196,72,46,0.12);}
+  .troop-icon-box{
+    width:52px; height:52px; margin:0 auto 8px; border-radius:11px;
+    background:linear-gradient(180deg,#8fd6f5,#2f8fc4 55%,#1f6f9c);
+    border:2px solid #143f57;
+    box-shadow:inset 0 2px 3px rgba(255,255,255,0.55), inset 0 -4px 6px rgba(0,0,0,0.28), 0 2px 4px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center; transition:box-shadow .15s;
+  }
+  .troop-card.selected .troop-icon-box{box-shadow:inset 0 2px 3px rgba(255,255,255,0.55), inset 0 -4px 6px rgba(0,0,0,0.28), 0 0 0 2px var(--signal-bright), 0 2px 6px rgba(232,98,63,0.4);}
+  .troop-icon-box svg{width:60%; height:60%; fill:#f4faff; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25));}
+  .troop-label{font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--sand-300); font-weight:700;}
+  .troop-card.selected .troop-label{color:var(--sand-050);}
+  .check-mark{position:absolute; top:6px; right:8px; font-size:0.7rem; color:var(--signal-bright); opacity:0; transition:opacity .15s;}
+  .troop-card.selected .check-mark{opacity:1;}
+  .submit-btn{
+    width:100%; background:var(--signal); color:#fff; border:none; padding:15px; font-family:inherit;
+    font-size:0.85rem; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; border-radius:2px;
+    cursor:pointer; margin-top:10px; transition:background .15s;
+  }
+  .submit-btn:hover{background:var(--signal-bright);}
+  .submit-btn:disabled{background:var(--sand-700); color:var(--sand-500); cursor:not-allowed;}
+  .msg{padding:12px 14px; border-radius:2px; font-size:0.82rem; margin-top:16px; display:none;}
+  .msg.ok{display:block; background:rgba(92,138,92,0.15); border:1px solid var(--ok); color:#a8c9a8;}
+  .msg.err{display:block; background:rgba(196,72,46,0.15); border:1px solid var(--signal); color:#e8a894;}
+  .pin-box{max-width:280px; margin:60px auto; text-align:center;}
+  .pin-box p{color:var(--sand-500); font-size:0.8rem; margin-bottom:16px;}
+  .admin-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+  .count-badge{font-size:0.72rem; color:var(--sand-500); letter-spacing:0.05em;}
+  .count-badge b{color:var(--signal-bright); font-size:1rem;}
+  .export-btn{
+    background:var(--sand-800); border:1px solid var(--sand-500); color:var(--sand-100); padding:10px 16px;
+    font-family:inherit; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;
+    border-radius:2px; cursor:pointer;
+  }
+  .export-btn:hover{border-color:var(--signal-bright); color:var(--signal-bright);}
+  table{width:100%; border-collapse:collapse; font-size:0.82rem;}
+  th{
+    text-align:left; padding:10px 8px; font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--sand-500); border-bottom:1px solid var(--sand-700); font-weight:700;
+  }
+  td{padding:10px 8px; border-bottom:1px solid var(--sand-800); color:var(--sand-100);}
+  tr:hover td{background:rgba(196,72,46,0.05);}
+  .troop-pill{
+    display:inline-flex; align-items:center; gap:4px; font-size:0.65rem; padding:2px 8px 2px 4px; border-radius:10px; margin:1px;
+    background:var(--sand-800); border:1px solid var(--sand-700); color:var(--sand-300);
+  }
+  .troop-pill svg{width:13px; height:13px; fill:var(--signal-bright); flex-shrink:0;}
+  .empty-state{text-align:center; padding:60px 20px; color:var(--sand-500); font-size:0.85rem;}
+  .del-btn{background:none; border:none; color:var(--sand-700); cursor:pointer; font-size:0.9rem;}
+  .del-btn:hover{color:var(--signal);}
+  ::placeholder{color:var(--sand-700);}
+  .table-wrap{overflow-x:auto;}
+  .power-val{color:var(--signal-bright); font-weight:700;}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<header>
+  <div class="brand-block">
+    <span class="eyebrow" data-i18n="eyebrow">Server Transfer Intake</span>
+    <h1>SERVER <b>1236</b></h1>
+    <span class="sub" data-i18n="subtitle">Ho3s Alliance — Incoming Roster</span>
+  </div>
+  <div class="lang-switch">
+    <button data-lang="pt" class="active">PT</button>
+    <button data-lang="en">EN</button>
+    <button data-lang="es">ES</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" data-tab="form" data-i18n="tabRegister">Register</button>
+    <button class="tab" data-tab="admin" data-i18n="tabAdmin">Admin</button>
+  </div>
+
+  <!-- REGISTRATION PANEL -->
+  <section id="panel-form" class="panel active">
+    <div class="field">
+      <label data-i18n="labelName">Player Name</label>
+      <input type="text" id="inpName" placeholder="Ex: DesertFox" data-i18n-ph="phName">
+    </div>
+    <div class="field">
+      <label data-i18n="labelServer">Current Server</label>
+      <input type="text" id="inpServer" placeholder="Ex: 1198" data-i18n-ph="phServer">
+    </div>
+    <div class="field">
+      <label data-i18n="labelPower">Total Hero Power</label>
+      <input type="number" id="inpPower" placeholder="Ex: 4500000" data-i18n-ph="phPower">
+    </div>
+    <div class="field">
+      <label data-i18n="labelTroop1">Troop 1 Power</label>
+      <input type="number" id="inpTroop1" placeholder="Ex: 1200000" data-i18n-ph="phTroop1">
+    </div>
+    <div class="field">
+      <label data-i18n="labelTroops">Troop Types</label>
+      <div class="troop-grid">
+        <div class="troop-card" data-troop="tanks">
+          <span class="check-mark">✓</span>
+          <div class="troop-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M7 8h6l2 2h6v2h-1.2l-.5 2H21v2H3v-2h1.7l-.5-2H3v-2h6l1-1V6h2v2zM5.8 12l.5 2h11.4l.5-2H5.8z"/><circle cx="6" cy="18.5" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/><circle cx="18" cy="18.5" r="1.7"/></svg>
+          </div>
+          <span class="troop-label" data-i18n="troopTanks">Tanks</span>
+        </div>
+        <div class="troop-card" data-troop="missiles">
+          <span class="check-mark">✓</span>
+          <div class="troop-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M2 15h9v3.5c0 .8-.7 1.5-1.5 1.5H4a2 2 0 01-2-2v-3z"/><circle cx="5" cy="20.5" r="1.5"/><circle cx="9.5" cy="20.5" r="1.5"/><g transform="rotate(-38 12 11)"><rect x="10.5" y="3" width="3" height="12" rx="1.3"/><polygon points="10.5,3 13.5,3 12,0.3"/><polygon points="10.2,14 13.8,14 13.2,16.5 10.8,16.5"/></g></svg>
+          </div>
+          <span class="troop-label" data-i18n="troopMissiles">Missiles</span>
+        </div>
+        <div class="troop-card" data-troop="aircraft">
+          <span class="check-mark">✓</span>
+          <div class="troop-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M12 2c.6 0 1 .5 1 1.2v5.4l7 4.2v1.8l-7-2V17l2.3 1.7v1.5L12 19l-3.3 1.2v-1.5L11 17v-4.4l-7 2v-1.8l7-4.2V3.2C11 2.5 11.4 2 12 2z"/></svg>
+          </div>
+          <span class="troop-label" data-i18n="troopAircraft">Aircraft</span>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="labelKills">Kills</label>
+      <input type="number" id="inpKills" placeholder="Ex: 12000000" data-i18n-ph="phKills">
+    </div>
+    <button class="submit-btn" id="btnSubmit" data-i18n="btnSubmit">Submit Registration</button>
+    <div class="msg" id="formMsg"></div>
+  </section>
+
+  <!-- ADMIN PANEL -->
+  <section id="panel-admin" class="panel">
+    <div id="pinGate" class="pin-box">
+      <p data-i18n="pinPrompt">Admin access — enter PIN</p>
+      <input type="text" id="inpPin" inputmode="numeric" style="text-align:center; letter-spacing:0.3em;" placeholder="••••">
+      <button class="submit-btn" id="btnPin" style="margin-top:14px;" data-i18n="btnUnlock">Unlock</button>
+      <div class="msg" id="pinMsg"></div>
+    </div>
+
+    <div id="adminView" style="display:none;">
+      <div class="admin-header">
+        <span class="count-badge" data-i18n="registered">Registered: <b id="countNum">0</b></span>
+        <button class="export-btn" id="btnExport" data-i18n="btnExport">⬇ Export Excel</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="thName">Name</th>
+              <th data-i18n="thServer">Server</th>
+              <th data-i18n="thPower">Power</th>
+              <th data-i18n="thTroop1">Troop 1</th>
+              <th data-i18n="thTroops">Troops</th>
+              <th data-i18n="thKills">Kills</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" style="display:none;" data-i18n="emptyState">No registrations yet.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ============ CONFIG — EDIT BEFORE DEPLOY ============ */
+const firebaseConfig = {
+  apiKey: "COLE_AQUI_SUA_API_KEY",
+  authDomain: "desert-storm-ho3s.firebaseapp.com",
+  databaseURL: "https://desert-storm-ho3s-default-rtdb.firebaseio.com",
+  projectId: "desert-storm-ho3s",
+  storageBucket: "desert-storm-ho3s.appspot.com",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
+};
+const ADMIN_PIN = "2026";
+const DB_NODE = "transferencias-1236"; // separate node, doesn't touch existing DS data
+/* ======================================================= */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ref = db.ref(DB_NODE);
+
+// ---------- i18n ----------
+const i18n = {
+  pt:{
+    eyebrow:"Cadastro de Transferência", subtitle:"Ho3s Alliance — Entrada de Jogadores",
+    tabRegister:"Cadastrar", tabAdmin:"Admin",
+    labelName:"Nome do Jogador", phName:"Ex: DesertFox",
+    labelServer:"Servidor Atual", phServer:"Ex: 1198",
+    labelPower:"Poder Total do Herói", phPower:"Ex: 4500000",
+    labelTroop1:"Poder do Primeiro Esquadrão", phTroop1:"Ex: 1200000",
+    labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Mísseis", troopAircraft:"Aeronaves",
+    labelKills:"Abates", phKills:"Ex: 12000000",
+    btnSubmit:"Enviar Cadastro",
+    pinPrompt:"Acesso admin — digite o PIN", btnUnlock:"Desbloquear",
+    registered:"Cadastrados: ", btnExport:"⬇ Exportar Excel",
+    thName:"Nome", thServer:"Servidor", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
+    emptyState:"Nenhum cadastro ainda.",
+    okMsg:"Cadastro enviado com sucesso!",
+    errFields:"Preencha nome, servidor atual, poder e ao menos um tipo de tropa.",
+    errPin:"PIN incorreto.",
+    confirmDel:"Excluir este cadastro?"
+  },
+  en:{
+    eyebrow:"Server Transfer Intake", subtitle:"Ho3s Alliance — Incoming Roster",
+    tabRegister:"Register", tabAdmin:"Admin",
+    labelName:"Player Name", phName:"E.g. DesertFox",
+    labelServer:"Current Server", phServer:"E.g. 1198",
+    labelPower:"Total Hero Power", phPower:"E.g. 4500000",
+    labelTroop1:"First Squad Power", phTroop1:"E.g. 1200000",
+    labelTroops:"Troop Types", troopTanks:"Tanks", troopMissiles:"Missiles", troopAircraft:"Aircraft",
+    labelKills:"Kills", phKills:"E.g. 12000000",
+    btnSubmit:"Submit Registration",
+    pinPrompt:"Admin access — enter PIN", btnUnlock:"Unlock",
+    registered:"Registered: ", btnExport:"⬇ Export Excel",
+    thName:"Name", thServer:"Server", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
+    emptyState:"No registrations yet.",
+    okMsg:"Registration submitted successfully!",
+    errFields:"Fill in name, current server, power, and at least one troop type.",
+    errPin:"Incorrect PIN.",
+    confirmDel:"Delete this registration?"
+  },
+  es:{
+    eyebrow:"Registro de Transferencia", subtitle:"Ho3s Alliance — Ingreso de Jugadores",
+    tabRegister:"Registrar", tabAdmin:"Admin",
+    labelName:"Nombre del Jugador", phName:"Ej: DesertFox",
+    labelServer:"Servidor Actual", phServer:"Ej: 1198",
+    labelPower:"Poder Total del Héroe", phPower:"Ej: 4500000",
+    labelTroop1:"Poder del Primer Escuadrón", phTroop1:"Ej: 1200000",
+    labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Misiles", troopAircraft:"Aeronaves",
+    labelKills:"Bajas", phKills:"Ej: 12000000",
+    btnSubmit:"Enviar Registro",
+    pinPrompt:"Acceso admin — ingrese el PIN", btnUnlock:"Desbloquear",
+    registered:"Registrados: ", btnExport:"⬇ Exportar Excel",
+    thName:"Nombre", thServer:"Servidor", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
+    emptyState:"Aún no hay registros.",
+    okMsg:"¡Registro enviado con éxito!",
+    errFields:"Complete nombre, servidor actual, poder y al menos un tipo de tropa.",
+    errPin:"PIN incorrecto.",
+    confirmDel:"¿Eliminar este registro?"
+  }
+};
+let currentLang = "pt";
+function applyLang(lang){
+  currentLang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key = el.getAttribute("data-i18n");
+    if(i18n[lang][key] !== undefined) el.textContent = i18n[lang][key];
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{
+    const key = el.getAttribute("data-i18n-ph");
+    if(i18n[lang][key] !== undefined) el.placeholder = i18n[lang][key];
+  });
+  document.querySelectorAll(".lang-switch button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.lang === lang);
+  });
+  renderTable(lastData || {});
+}
+document.querySelectorAll(".lang-switch button").forEach(b=>{
+  b.addEventListener("click", ()=>applyLang(b.dataset.lang));
+});
+
+// ---------- tabs ----------
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.tab).classList.add("active");
+  });
+});
+
+// ---------- troop selection ----------
+const selectedTroops = new Set();
+document.querySelectorAll(".troop-card").forEach(card=>{
+  card.addEventListener("click", ()=>{
+    const t = card.dataset.troop;
+    if(selectedTroops.has(t)){ selectedTroops.delete(t); card.classList.remove("selected"); }
+    else { selectedTroops.add(t); card.classList.add("selected"); }
+  });
+});
+
+// ---------- submit ----------
+document.getElementById("btnSubmit").addEventListener("click", ()=>{
+  const name = document.getElementById("inpName").value.trim();
+  const server = document.getElementById("inpServer").value.trim();
+  const power = document.getElementById("inpPower").value.trim();
+  const troop1 = document.getElementById("inpTroop1").value.trim();
+  const kills = document.getElementById("inpKills").value.trim();
+  const msgEl = document.getElementById("formMsg");
+
+  if(!name || !server || !power || selectedTroops.size === 0){
+    msgEl.className = "msg err";
+    msgEl.textContent = i18n[currentLang].errFields;
+    return;
+  }
+
+  const entry = {
+    name, server, power: Number(power), troop1Power: troop1 ? Number(troop1) : 0,
+    kills: kills ? Number(kills) : 0,
+    troops: Array.from(selectedTroops),
+    submittedAt: Date.now()
+  };
+
+  ref.push(entry).then(()=>{
+    msgEl.className = "msg ok";
+    msgEl.textContent = i18n[currentLang].okMsg;
+    document.getElementById("inpName").value = "";
+    document.getElementById("inpServer").value = "";
+    document.getElementById("inpPower").value = "";
+    document.getElementById("inpTroop1").value = "";
+    document.getElementById("inpKills").value = "";
+    selectedTroops.clear();
+    document.querySelectorAll(".troop-card").forEach(c=>c.classList.remove("selected"));
+  }).catch(err=>{
+    msgEl.className = "msg err";
+    msgEl.textContent = err.message;
+  });
+});
+
+// ---------- admin pin ----------
+document.getElementById("btnPin").addEventListener("click", unlockAdmin);
+document.getElementById("inpPin").addEventListener("keydown", e=>{ if(e.key==="Enter") unlockAdmin(); });
+function unlockAdmin(){
+  const val = document.getElementById("inpPin").value.trim();
+  if(val === ADMIN_PIN){
+    document.getElementById("pinGate").style.display = "none";
+    document.getElementById("adminView").style.display = "block";
+    startAdminListener();
+  } else {
+    const m = document.getElementById("pinMsg");
+    m.className = "msg err";
+    m.textContent = i18n[currentLang].errPin;
+  }
+}
+
+// ---------- admin data ----------
+let lastData = {};
+let adminListenerStarted = false;
+function startAdminListener(){
+  if(adminListenerStarted) return;
+  adminListenerStarted = true;
+  ref.on("value", snap=>{
+    lastData = snap.val() || {};
+    renderTable(lastData);
+  });
+}
+const troopIcons = {
+  tanks:'<svg viewBox="0 0 24 24"><path d="M7 8h6l2 2h6v2h-1.2l-.5 2H21v2H3v-2h1.7l-.5-2H3v-2h6l1-1V6h2v2zM5.8 12l.5 2h11.4l.5-2H5.8z"/><circle cx="6" cy="18.5" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/><circle cx="18" cy="18.5" r="1.7"/></svg>',
+  missiles:'<svg viewBox="0 0 24 24"><path d="M2 15h9v3.5c0 .8-.7 1.5-1.5 1.5H4a2 2 0 01-2-2v-3z"/><circle cx="5" cy="20.5" r="1.5"/><circle cx="9.5" cy="20.5" r="1.5"/><g transform="rotate(-38 12 11)"><rect x="10.5" y="3" width="3" height="12" rx="1.3"/><polygon points="10.5,3 13.5,3 12,0.3"/><polygon points="10.2,14 13.8,14 13.2,16.5 10.8,16.5"/></g></svg>',
+  aircraft:'<svg viewBox="0 0 24 24"><path d="M12 2c.6 0 1 .5 1 1.2v5.4l7 4.2v1.8l-7-2V17l2.3 1.7v1.5L12 19l-3.3 1.2v-1.5L11 17v-4.4l-7 2v-1.8l7-4.2V3.2C11 2.5 11.4 2 12 2z"/></svg>'
+};
+function renderTable(data){
+  const tbody = document.getElementById("tblBody");
+  const empty = document.getElementById("emptyState");
+  const countNum = document.getElementById("countNum");
+  if(!tbody) return;
+  tbody.innerHTML = "";
+  const keys = Object.keys(data);
+  countNum.textContent = keys.length;
+  empty.style.display = keys.length === 0 ? "block" : "none";
+  keys.sort((a,b)=> (data[b].submittedAt||0) - (data[a].submittedAt||0));
+  keys.forEach(key=>{
+    const e = data[key];
+    const tr = document.createElement("tr");
+    const troopLabels = (e.troops||[]).map(t=>{
+      const label = i18n[currentLang]["troop"+t.charAt(0).toUpperCase()+t.slice(1)] || t;
+      return `<span class="troop-pill">${troopIcons[t]||""}${label}</span>`;
+    }).join(" ");
+    tr.innerHTML = `
+      <td>${escapeHtml(e.name||"")}</td>
+      <td>${escapeHtml(e.server||"")}</td>
+      <td class="power-val">${Number(e.power||0).toLocaleString()}</td>
+      <td>${Number(e.troop1Power||0).toLocaleString()}</td>
+      <td>${troopLabels}</td>
+      <td>${Number(e.kills||0).toLocaleString()}</td>
+      <td><button class="del-btn" data-key="${key}">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll(".del-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(confirm(i18n[currentLang].confirmDel)){
+        ref.child(btn.dataset.key).remove();
+      }
+    });
+  });
+}
+function escapeHtml(str){
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ---------- excel export ----------
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const rows = Object.values(lastData).map(e=>({
+    Name: e.name,
+    "Current Server": e.server,
+    "Hero Power": e.power,
+    "First Squad Power": e.troop1Power,
+    Troops: (e.troops||[]).join(", "),
+    Kills: e.kills,
+    "Submitted At": e.submittedAt ? new Date(e.submittedAt).toLocaleString() : ""
+  }));
+  if(rows.length === 0) return;
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Server 1236");
+  XLSX.writeFile(wb, "server-1236-transfers.xlsx");
+});
+
+applyLang("pt");
+</script>
+</body>
+</html>
