@@ -159,11 +159,11 @@
   <div class="brand-block">
     <span class="eyebrow" data-i18n="eyebrow">Server Transfer Intake</span>
     <h1>SERVER <b>1236</b></h1>
-    <span class="sub" data-i18n="subtitle">Ho3s Alliance — Incoming Roster</span>
+    <span class="sub" data-i18n="subtitle">Incoming Roster</span>
   </div>
   <div class="lang-switch">
-    <button data-lang="pt" class="active">PT</button>
-    <button data-lang="en">EN</button>
+    <button data-lang="en" class="active">EN</button>
+    <button data-lang="pt">PT</button>
     <button data-lang="es">ES</button>
   </div>
 </header>
@@ -176,6 +176,7 @@
 
   <!-- REGISTRATION PANEL -->
   <section id="panel-form" class="panel active">
+    <p style="font-size:0.85rem; color:var(--sand-300); line-height:1.6; margin-bottom:24px;" data-i18n="introMsg">Looking for strong, active, and fun players for Server 1236! If you want to be part of a competitive server with good vibes, drop your info below. 🔥🏆</p>
     <div class="field">
       <label data-i18n="labelName">Player Name</label>
       <input type="text" id="inpName" placeholder="Ex: DesertFox" data-i18n-ph="phName">
@@ -185,7 +186,11 @@
       <input type="text" id="inpServer" placeholder="Ex: 1198" data-i18n-ph="phServer">
     </div>
     <div class="field">
-      <label data-i18n="labelPower">Total Hero Power</label>
+      <label data-i18n="labelInterestedAlliance">Which alliance are you interested in?</label>
+      <input type="text" id="inpInterestedAlliance" placeholder="Ex: H03s" data-i18n-ph="phInterestedAlliance">
+    </div>
+    <div class="field">
+      <label data-i18n="labelPower">Total Hero Power (THP)</label>
       <input type="text" id="inpPower" placeholder="Ex: 1k ou 1M ou 1G" data-i18n-ph="phPower">
     </div>
     <div class="field">
@@ -234,7 +239,7 @@
     </div>
     <div class="field">
       <label data-i18n="labelProfLevel">Professional Level</label>
-      <input type="text" id="inpProfLevel" placeholder="Ex: Full-time / Casual" data-i18n-ph="phProfLevel">
+      <input type="text" id="inpProfLevel" data-i18n-ph="phProfLevel">
     </div>
     <div class="field">
       <label data-i18n="labelExtra">Anything else we should know?</label>
@@ -264,6 +269,7 @@
             <tr>
               <th data-i18n="thName">Name</th>
               <th data-i18n="thServer">Server</th>
+              <th data-i18n="thInterestedAlliance">Interested In</th>
               <th data-i18n="thPower">Power</th>
               <th data-i18n="thTroop1">Troop 1</th>
               <th data-i18n="thTroops">Troops</th>
@@ -304,22 +310,24 @@ const ref = db.ref(DB_NODE);
 // ---------- i18n ----------
 const i18n = {
   pt:{
-    eyebrow:"Cadastro de Transferência", subtitle:"Ho3s Alliance — Entrada de Jogadores",
+    eyebrow:"Cadastro de Transferência", subtitle:"Entrada de Jogadores",
+    introMsg:"Procurando jogadores fortes, ativos e engajados para o Server 1236! Se você quer fazer parte de um server competitivo com boa vibe, deixa suas informações abaixo. 🔥🏆",
     tabRegister:"Cadastrar", tabAdmin:"Admin",
     labelName:"Nome do Jogador", phName:"Ex: DesertFox",
     labelServer:"Servidor Atual", phServer:"Ex: 1198",
-    labelPower:"Poder Total do Herói", phPower:"Ex: 1k ou 1M ou 1G",
+    labelInterestedAlliance:"Qual aliança você tem interesse?", phInterestedAlliance:"Ex: H03s",
+    labelPower:"Poder Total do Herói (PTH)", phPower:"Ex: 1k ou 1M ou 1G",
     labelTroop1:"Poder do Primeiro Esquadrão", phTroop1:"Ex: 1k ou 1M ou 1G",
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Mísseis", troopAircraft:"Aeronaves",
     labelKills:"Abates", phKills:"Ex: 1k ou 1M ou 1G",
     shorthandHint:"Pode usar k (mil), M (milhão) ou G (bilhão) — ex: 1k ou 1M ou 1G",
     labelSeatColor:"Cor do Assento", seatGold:"Dourado", seatPurple:"Roxo", seatBlue:"Azul", seatWhite:"Branco",
-    labelProfLevel:"Nível Profissional", phProfLevel:"Ex: Dedicado / Casual",
+    labelProfLevel:"Nível Profissional", phProfLevel:"",
     labelExtra:"Algo mais que devemos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Cadastro",
     pinPrompt:"Acesso admin — digite o PIN", btnUnlock:"Desbloquear",
     registered:"Cadastrados: ", btnExport:"⬇ Exportar Excel",
-    thName:"Nome", thServer:"Servidor", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
+    thName:"Nome", thServer:"Servidor", thInterestedAlliance:"Interesse em", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
     thSeat:"Assento", thProf:"Nível", thExtra:"Obs",
     emptyState:"Nenhum cadastro ainda.",
     okMsg:"Cadastro enviado com sucesso!",
@@ -328,22 +336,24 @@ const i18n = {
     confirmDel:"Excluir este cadastro?"
   },
   en:{
-    eyebrow:"Server Transfer Intake", subtitle:"Ho3s Alliance — Incoming Roster",
+    eyebrow:"Server Transfer Intake", subtitle:"Incoming Roster",
+    introMsg:"Looking for strong, active, and fun players for Server 1236! If you want to be part of a competitive server with good vibes, drop your info below. 🔥🏆",
     tabRegister:"Register", tabAdmin:"Admin",
     labelName:"Player Name", phName:"E.g. DesertFox",
     labelServer:"Current Server", phServer:"E.g. 1198",
-    labelPower:"Total Hero Power", phPower:"E.g. 1k or 1M or 1G",
+    labelInterestedAlliance:"Which alliance are you interested in?", phInterestedAlliance:"E.g. H03s",
+    labelPower:"Total Hero Power (THP)", phPower:"E.g. 1k or 1M or 1G",
     labelTroop1:"First Squad Power", phTroop1:"E.g. 1k or 1M or 1G",
     labelTroops:"Troop Types", troopTanks:"Tanks", troopMissiles:"Missiles", troopAircraft:"Aircraft",
     labelKills:"Kills", phKills:"E.g. 1k or 1M or 1G",
     shorthandHint:"You can use k (thousand), M (million), or G (billion) — e.g. 1k or 1M or 1G",
     labelSeatColor:"Seat Color", seatGold:"Gold", seatPurple:"Purple", seatBlue:"Blue", seatWhite:"White",
-    labelProfLevel:"Professional Level", phProfLevel:"E.g. Full-time / Casual",
+    labelProfLevel:"Professional Level", phProfLevel:"",
     labelExtra:"Anything else we should know?", phExtra:"Optional",
     btnSubmit:"Submit Registration",
     pinPrompt:"Admin access — enter PIN", btnUnlock:"Unlock",
     registered:"Registered: ", btnExport:"⬇ Export Excel",
-    thName:"Name", thServer:"Server", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
+    thName:"Name", thServer:"Server", thInterestedAlliance:"Interested In", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
     thSeat:"Seat", thProf:"Level", thExtra:"Notes",
     emptyState:"No registrations yet.",
     okMsg:"Registration submitted successfully!",
@@ -352,22 +362,24 @@ const i18n = {
     confirmDel:"Delete this registration?"
   },
   es:{
-    eyebrow:"Registro de Transferencia", subtitle:"Ho3s Alliance — Ingreso de Jugadores",
+    eyebrow:"Registro de Transferencia", subtitle:"Ingreso de Jugadores",
+    introMsg:"¡Buscando jugadores fuertes, activos y comprometidos para el Server 1236! Si quieres ser parte de un servidor competitivo con buena vibra, deja tu información abajo. 🔥🏆",
     tabRegister:"Registrar", tabAdmin:"Admin",
     labelName:"Nombre del Jugador", phName:"Ej: DesertFox",
     labelServer:"Servidor Actual", phServer:"Ej: 1198",
-    labelPower:"Poder Total del Héroe", phPower:"Ej: 1k o 1M o 1G",
+    labelInterestedAlliance:"¿En qué alianza está interesado?", phInterestedAlliance:"Ej: H03s",
+    labelPower:"Poder Total del Héroe (PTH)", phPower:"Ej: 1k o 1M o 1G",
     labelTroop1:"Poder del Primer Escuadrón", phTroop1:"Ej: 1k o 1M o 1G",
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Misiles", troopAircraft:"Aeronaves",
     labelKills:"Bajas", phKills:"Ej: 1k o 1M o 1G",
     shorthandHint:"Puede usar k (mil), M (millón) o G (mil millones) — ej: 1k o 1M o 1G",
     labelSeatColor:"Color del Asiento", seatGold:"Dorado", seatPurple:"Morado", seatBlue:"Azul", seatWhite:"Blanco",
-    labelProfLevel:"Nivel Profesional", phProfLevel:"Ej: Dedicado / Casual",
+    labelProfLevel:"Nivel Profesional", phProfLevel:"",
     labelExtra:"¿Algo más que debamos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Registro",
     pinPrompt:"Acceso admin — ingrese el PIN", btnUnlock:"Desbloquear",
     registered:"Registrados: ", btnExport:"⬇ Exportar Excel",
-    thName:"Nombre", thServer:"Servidor", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
+    thName:"Nombre", thServer:"Servidor", thInterestedAlliance:"Interés en", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
     thSeat:"Asiento", thProf:"Nivel", thExtra:"Notas",
     emptyState:"Aún no hay registros.",
     okMsg:"¡Registro enviado con éxito!",
@@ -376,7 +388,7 @@ const i18n = {
     confirmDel:"¿Eliminar este registro?"
   }
 };
-let currentLang = "pt";
+let currentLang = "en";
 function applyLang(lang){
   currentLang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el=>{
@@ -444,6 +456,7 @@ document.querySelectorAll("#seatColorGroup .radio-option").forEach(opt=>{
 document.getElementById("btnSubmit").addEventListener("click", ()=>{
   const name = document.getElementById("inpName").value.trim();
   const server = document.getElementById("inpServer").value.trim();
+  const interestedAlliance = document.getElementById("inpInterestedAlliance").value.trim();
   const powerRaw = document.getElementById("inpPower").value.trim();
   const troop1Raw = document.getElementById("inpTroop1").value.trim();
   const killsRaw = document.getElementById("inpKills").value.trim();
@@ -458,7 +471,8 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
   }
 
   const entry = {
-    name, server, power: parseShorthand(powerRaw), troop1Power: parseShorthand(troop1Raw),
+    name, server, interestedAlliance,
+    power: parseShorthand(powerRaw), troop1Power: parseShorthand(troop1Raw),
     kills: parseShorthand(killsRaw),
     troops: Array.from(selectedTroops),
     seatColor: selectedSeat, profLevel, extra,
@@ -470,6 +484,7 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
     msgEl.textContent = i18n[currentLang].okMsg;
     document.getElementById("inpName").value = "";
     document.getElementById("inpServer").value = "";
+    document.getElementById("inpInterestedAlliance").value = "";
     document.getElementById("inpPower").value = "";
     document.getElementById("inpTroop1").value = "";
     document.getElementById("inpKills").value = "";
@@ -538,6 +553,7 @@ function renderTable(data){
     tr.innerHTML = `
       <td>${escapeHtml(e.name||"")}</td>
       <td>${escapeHtml(e.server||"")}</td>
+      <td>${escapeHtml(e.interestedAlliance||"")}</td>
       <td class="power-val">${formatShorthand(e.power)}</td>
       <td>${formatShorthand(e.troop1Power)}</td>
       <td>${troopLabels}</td>
@@ -575,6 +591,7 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
   const rows = Object.values(lastData).map(e=>({
     Name: e.name,
     "Current Server": e.server,
+    "Interested Alliance": e.interestedAlliance,
     "Hero Power": e.power,
     "First Squad Power": e.troop1Power,
     Troops: (e.troops||[]).join(", "),
@@ -591,7 +608,7 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
   XLSX.writeFile(wb, "server-1236-transfers.xlsx");
 });
 
-applyLang("pt");
+applyLang("en");
 </script>
 </body>
 </html>
