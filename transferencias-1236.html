@@ -137,6 +137,19 @@
   ::placeholder{color:var(--sand-700);}
   .table-wrap{overflow-x:auto;}
   .power-val{color:var(--signal-bright); font-weight:700;}
+  .radio-group{display:flex; flex-direction:column; gap:8px;}
+  .radio-option{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--sand-700); background:var(--sand-900); border-radius:3px; cursor:pointer; transition:border-color .15s;}
+  .radio-option.selected{border-color:var(--signal-bright); background:rgba(196,72,46,0.12);}
+  .radio-dot{width:16px; height:16px; border-radius:50%; border:2px solid var(--sand-500); flex-shrink:0; position:relative; transition:border-color .15s;}
+  .radio-option.selected .radio-dot{border-color:var(--signal-bright);}
+  .radio-option.selected .radio-dot::after{content:""; position:absolute; inset:2.5px; border-radius:50%; background:var(--signal-bright);}
+  .radio-option span:last-child{font-size:0.9rem; color:var(--sand-100);}
+  textarea{
+    width:100%; background:var(--sand-900); border:1px solid var(--sand-700); color:var(--sand-050);
+    padding:12px 14px; font-family:inherit; font-size:0.9rem; border-radius:2px; outline:none;
+    resize:vertical; min-height:80px; transition:border-color .15s;
+  }
+  textarea:focus{border-color:var(--signal-bright);}
 </style>
 </head>
 <body>
@@ -210,6 +223,23 @@
       <input type="text" id="inpKills" placeholder="Ex: 1k ou 1M ou 1G" data-i18n-ph="phKills">
     </div>
     <p style="font-size:0.7rem; color:var(--sand-500); margin-top:-10px;" data-i18n="shorthandHint">You can use k (thousand), M (million), or G (billion) — e.g. 4.5M</p>
+    <div class="field">
+      <label data-i18n="labelSeatColor">Seat Color</label>
+      <div class="radio-group" id="seatColorGroup">
+        <div class="radio-option" data-seat="gold"><span class="radio-dot"></span><span data-i18n="seatGold">Gold</span></div>
+        <div class="radio-option" data-seat="purple"><span class="radio-dot"></span><span data-i18n="seatPurple">Purple</span></div>
+        <div class="radio-option" data-seat="blue"><span class="radio-dot"></span><span data-i18n="seatBlue">Blue</span></div>
+        <div class="radio-option" data-seat="white"><span class="radio-dot"></span><span data-i18n="seatWhite">White</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="labelProfLevel">Professional Level</label>
+      <input type="text" id="inpProfLevel" placeholder="Ex: Full-time / Casual" data-i18n-ph="phProfLevel">
+    </div>
+    <div class="field">
+      <label data-i18n="labelExtra">Anything else we should know?</label>
+      <textarea id="inpExtra" data-i18n-ph="phExtra" placeholder="Optional"></textarea>
+    </div>
     <button class="submit-btn" id="btnSubmit" data-i18n="btnSubmit">Submit Registration</button>
     <div class="msg" id="formMsg"></div>
   </section>
@@ -238,6 +268,9 @@
               <th data-i18n="thTroop1">Troop 1</th>
               <th data-i18n="thTroops">Troops</th>
               <th data-i18n="thKills">Kills</th>
+              <th data-i18n="thSeat">Seat</th>
+              <th data-i18n="thProf">Level</th>
+              <th data-i18n="thExtra">Notes</th>
               <th></th>
             </tr>
           </thead>
@@ -280,13 +313,17 @@ const i18n = {
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Mísseis", troopAircraft:"Aeronaves",
     labelKills:"Abates", phKills:"Ex: 1k ou 1M ou 1G",
     shorthandHint:"Pode usar k (mil), M (milhão) ou G (bilhão) — ex: 1k ou 1M ou 1G",
+    labelSeatColor:"Cor do Assento", seatGold:"Dourado", seatPurple:"Roxo", seatBlue:"Azul", seatWhite:"Branco",
+    labelProfLevel:"Nível Profissional", phProfLevel:"Ex: Dedicado / Casual",
+    labelExtra:"Algo mais que devemos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Cadastro",
     pinPrompt:"Acesso admin — digite o PIN", btnUnlock:"Desbloquear",
     registered:"Cadastrados: ", btnExport:"⬇ Exportar Excel",
     thName:"Nome", thServer:"Servidor", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
+    thSeat:"Assento", thProf:"Nível", thExtra:"Obs",
     emptyState:"Nenhum cadastro ainda.",
     okMsg:"Cadastro enviado com sucesso!",
-    errFields:"Preencha nome, servidor atual, poder e ao menos um tipo de tropa.",
+    errFields:"Preencha nome, servidor atual, poder, tropa, cor do assento e nível profissional.",
     errPin:"PIN incorreto.",
     confirmDel:"Excluir este cadastro?"
   },
@@ -300,13 +337,17 @@ const i18n = {
     labelTroops:"Troop Types", troopTanks:"Tanks", troopMissiles:"Missiles", troopAircraft:"Aircraft",
     labelKills:"Kills", phKills:"E.g. 1k or 1M or 1G",
     shorthandHint:"You can use k (thousand), M (million), or G (billion) — e.g. 1k or 1M or 1G",
+    labelSeatColor:"Seat Color", seatGold:"Gold", seatPurple:"Purple", seatBlue:"Blue", seatWhite:"White",
+    labelProfLevel:"Professional Level", phProfLevel:"E.g. Full-time / Casual",
+    labelExtra:"Anything else we should know?", phExtra:"Optional",
     btnSubmit:"Submit Registration",
     pinPrompt:"Admin access — enter PIN", btnUnlock:"Unlock",
     registered:"Registered: ", btnExport:"⬇ Export Excel",
     thName:"Name", thServer:"Server", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
+    thSeat:"Seat", thProf:"Level", thExtra:"Notes",
     emptyState:"No registrations yet.",
     okMsg:"Registration submitted successfully!",
-    errFields:"Fill in name, current server, power, and at least one troop type.",
+    errFields:"Fill in name, current server, power, troop type, seat color, and professional level.",
     errPin:"Incorrect PIN.",
     confirmDel:"Delete this registration?"
   },
@@ -320,13 +361,17 @@ const i18n = {
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Misiles", troopAircraft:"Aeronaves",
     labelKills:"Bajas", phKills:"Ej: 1k o 1M o 1G",
     shorthandHint:"Puede usar k (mil), M (millón) o G (mil millones) — ej: 1k o 1M o 1G",
+    labelSeatColor:"Color del Asiento", seatGold:"Dorado", seatPurple:"Morado", seatBlue:"Azul", seatWhite:"Blanco",
+    labelProfLevel:"Nivel Profesional", phProfLevel:"Ej: Dedicado / Casual",
+    labelExtra:"¿Algo más que debamos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Registro",
     pinPrompt:"Acceso admin — ingrese el PIN", btnUnlock:"Desbloquear",
     registered:"Registrados: ", btnExport:"⬇ Exportar Excel",
     thName:"Nombre", thServer:"Servidor", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
+    thSeat:"Asiento", thProf:"Nivel", thExtra:"Notas",
     emptyState:"Aún no hay registros.",
     okMsg:"¡Registro enviado con éxito!",
-    errFields:"Complete nombre, servidor actual, poder y al menos un tipo de tropa.",
+    errFields:"Complete nombre, servidor actual, poder, tropa, color del asiento y nivel profesional.",
     errPin:"PIN incorrecto.",
     confirmDel:"¿Eliminar este registro?"
   }
@@ -386,15 +431,27 @@ function parseShorthand(str){
   return Math.round(num);
 }
 
+// ---------- seat color selection ----------
+let selectedSeat = null;
+document.querySelectorAll("#seatColorGroup .radio-option").forEach(opt=>{
+  opt.addEventListener("click", ()=>{
+    document.querySelectorAll("#seatColorGroup .radio-option").forEach(o=>o.classList.remove("selected"));
+    opt.classList.add("selected");
+    selectedSeat = opt.dataset.seat;
+  });
+});
+
 document.getElementById("btnSubmit").addEventListener("click", ()=>{
   const name = document.getElementById("inpName").value.trim();
   const server = document.getElementById("inpServer").value.trim();
   const powerRaw = document.getElementById("inpPower").value.trim();
   const troop1Raw = document.getElementById("inpTroop1").value.trim();
   const killsRaw = document.getElementById("inpKills").value.trim();
+  const profLevel = document.getElementById("inpProfLevel").value.trim();
+  const extra = document.getElementById("inpExtra").value.trim();
   const msgEl = document.getElementById("formMsg");
 
-  if(!name || !server || !powerRaw || selectedTroops.size === 0){
+  if(!name || !server || !powerRaw || selectedTroops.size === 0 || !selectedSeat || !profLevel){
     msgEl.className = "msg err";
     msgEl.textContent = i18n[currentLang].errFields;
     return;
@@ -404,6 +461,7 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
     name, server, power: parseShorthand(powerRaw), troop1Power: parseShorthand(troop1Raw),
     kills: parseShorthand(killsRaw),
     troops: Array.from(selectedTroops),
+    seatColor: selectedSeat, profLevel, extra,
     submittedAt: Date.now()
   };
 
@@ -415,8 +473,12 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
     document.getElementById("inpPower").value = "";
     document.getElementById("inpTroop1").value = "";
     document.getElementById("inpKills").value = "";
+    document.getElementById("inpProfLevel").value = "";
+    document.getElementById("inpExtra").value = "";
     selectedTroops.clear();
     document.querySelectorAll(".troop-card").forEach(c=>c.classList.remove("selected"));
+    selectedSeat = null;
+    document.querySelectorAll("#seatColorGroup .radio-option").forEach(o=>o.classList.remove("selected"));
   }).catch(err=>{
     msgEl.className = "msg err";
     msgEl.textContent = err.message;
@@ -472,6 +534,7 @@ function renderTable(data){
       const label = i18n[currentLang]["troop"+t.charAt(0).toUpperCase()+t.slice(1)] || t;
       return `<span class="troop-pill">${troopIcons[t]||""}${label}</span>`;
     }).join(" ");
+    const seatLabel = e.seatColor ? (i18n[currentLang]["seat"+e.seatColor.charAt(0).toUpperCase()+e.seatColor.slice(1)] || e.seatColor) : "";
     tr.innerHTML = `
       <td>${escapeHtml(e.name||"")}</td>
       <td>${escapeHtml(e.server||"")}</td>
@@ -479,6 +542,9 @@ function renderTable(data){
       <td>${formatShorthand(e.troop1Power)}</td>
       <td>${troopLabels}</td>
       <td>${formatShorthand(e.kills)}</td>
+      <td>${escapeHtml(seatLabel)}</td>
+      <td>${escapeHtml(e.profLevel||"")}</td>
+      <td>${escapeHtml(e.extra||"")}</td>
       <td><button class="del-btn" data-key="${key}">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -513,6 +579,9 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
     "First Squad Power": e.troop1Power,
     Troops: (e.troops||[]).join(", "),
     Kills: e.kills,
+    "Seat Color": e.seatColor,
+    "Professional Level": e.profLevel,
+    "Notes": e.extra,
     "Submitted At": e.submittedAt ? new Date(e.submittedAt).toLocaleString() : ""
   }));
   if(rows.length === 0) return;
