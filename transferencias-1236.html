@@ -173,11 +173,11 @@
     </div>
     <div class="field">
       <label data-i18n="labelPower">Total Hero Power</label>
-      <input type="number" id="inpPower" placeholder="Ex: 4500000" data-i18n-ph="phPower">
+      <input type="text" inputmode="decimal" id="inpPower" placeholder="Ex: 4.5M" data-i18n-ph="phPower">
     </div>
     <div class="field">
       <label data-i18n="labelTroop1">Troop 1 Power</label>
-      <input type="number" id="inpTroop1" placeholder="Ex: 1200000" data-i18n-ph="phTroop1">
+      <input type="text" inputmode="decimal" id="inpTroop1" placeholder="Ex: 1.2M" data-i18n-ph="phTroop1">
     </div>
     <div class="field">
       <label data-i18n="labelTroops">Troop Types</label>
@@ -207,8 +207,9 @@
     </div>
     <div class="field">
       <label data-i18n="labelKills">Kills</label>
-      <input type="number" id="inpKills" placeholder="Ex: 12000000" data-i18n-ph="phKills">
+      <input type="text" inputmode="decimal" id="inpKills" placeholder="Ex: 12M" data-i18n-ph="phKills">
     </div>
+    <p style="font-size:0.7rem; color:var(--sand-500); margin-top:-10px;" data-i18n="shorthandHint">You can use k (thousand), M (million), or G (billion) — e.g. 4.5M</p>
     <button class="submit-btn" id="btnSubmit" data-i18n="btnSubmit">Submit Registration</button>
     <div class="msg" id="formMsg"></div>
   </section>
@@ -274,10 +275,11 @@ const i18n = {
     tabRegister:"Cadastrar", tabAdmin:"Admin",
     labelName:"Nome do Jogador", phName:"Ex: DesertFox",
     labelServer:"Servidor Atual", phServer:"Ex: 1198",
-    labelPower:"Poder Total do Herói", phPower:"Ex: 4500000",
-    labelTroop1:"Poder do Primeiro Esquadrão", phTroop1:"Ex: 1200000",
+    labelPower:"Poder Total do Herói", phPower:"Ex: 1k ou 1M ou 1G",
+    labelTroop1:"Poder do Primeiro Esquadrão", phTroop1:"Ex: 1k ou 1M ou 1G",
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Mísseis", troopAircraft:"Aeronaves",
-    labelKills:"Abates", phKills:"Ex: 12000000",
+    labelKills:"Abates", phKills:"Ex: 1k ou 1M ou 1G",
+    shorthandHint:"Pode usar k (mil), M (milhão) ou G (bilhão) — ex: 1k ou 1M ou 1G",
     btnSubmit:"Enviar Cadastro",
     pinPrompt:"Acesso admin — digite o PIN", btnUnlock:"Desbloquear",
     registered:"Cadastrados: ", btnExport:"⬇ Exportar Excel",
@@ -293,10 +295,11 @@ const i18n = {
     tabRegister:"Register", tabAdmin:"Admin",
     labelName:"Player Name", phName:"E.g. DesertFox",
     labelServer:"Current Server", phServer:"E.g. 1198",
-    labelPower:"Total Hero Power", phPower:"E.g. 4500000",
-    labelTroop1:"First Squad Power", phTroop1:"E.g. 1200000",
+    labelPower:"Total Hero Power", phPower:"E.g. 1k or 1M or 1G",
+    labelTroop1:"First Squad Power", phTroop1:"E.g. 1k or 1M or 1G",
     labelTroops:"Troop Types", troopTanks:"Tanks", troopMissiles:"Missiles", troopAircraft:"Aircraft",
-    labelKills:"Kills", phKills:"E.g. 12000000",
+    labelKills:"Kills", phKills:"E.g. 1k or 1M or 1G",
+    shorthandHint:"You can use k (thousand), M (million), or G (billion) — e.g. 1k or 1M or 1G",
     btnSubmit:"Submit Registration",
     pinPrompt:"Admin access — enter PIN", btnUnlock:"Unlock",
     registered:"Registered: ", btnExport:"⬇ Export Excel",
@@ -312,10 +315,11 @@ const i18n = {
     tabRegister:"Registrar", tabAdmin:"Admin",
     labelName:"Nombre del Jugador", phName:"Ej: DesertFox",
     labelServer:"Servidor Actual", phServer:"Ej: 1198",
-    labelPower:"Poder Total del Héroe", phPower:"Ej: 4500000",
-    labelTroop1:"Poder del Primer Escuadrón", phTroop1:"Ej: 1200000",
+    labelPower:"Poder Total del Héroe", phPower:"Ej: 1k o 1M o 1G",
+    labelTroop1:"Poder del Primer Escuadrón", phTroop1:"Ej: 1k o 1M o 1G",
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Misiles", troopAircraft:"Aeronaves",
-    labelKills:"Bajas", phKills:"Ej: 12000000",
+    labelKills:"Bajas", phKills:"Ej: 1k o 1M o 1G",
+    shorthandHint:"Puede usar k (mil), M (millón) o G (mil millones) — ej: 1k o 1M o 1G",
     btnSubmit:"Enviar Registro",
     pinPrompt:"Acceso admin — ingrese el PIN", btnUnlock:"Desbloquear",
     registered:"Registrados: ", btnExport:"⬇ Exportar Excel",
@@ -368,23 +372,37 @@ document.querySelectorAll(".troop-card").forEach(card=>{
 });
 
 // ---------- submit ----------
+// ---------- shorthand number parsing (1k / 1M / 1G) ----------
+function parseShorthand(str){
+  if(!str) return 0;
+  const clean = str.trim().toLowerCase().replace(",", ".");
+  const match = clean.match(/^(\d+(\.\d+)?)\s*(k|m|g|b)?$/);
+  if(!match) return Number(clean.replace(/[^\d.]/g, "")) || 0;
+  let num = parseFloat(match[1]);
+  const suffix = match[3];
+  if(suffix === "k") num *= 1e3;
+  else if(suffix === "m") num *= 1e6;
+  else if(suffix === "g" || suffix === "b") num *= 1e9;
+  return Math.round(num);
+}
+
 document.getElementById("btnSubmit").addEventListener("click", ()=>{
   const name = document.getElementById("inpName").value.trim();
   const server = document.getElementById("inpServer").value.trim();
-  const power = document.getElementById("inpPower").value.trim();
-  const troop1 = document.getElementById("inpTroop1").value.trim();
-  const kills = document.getElementById("inpKills").value.trim();
+  const powerRaw = document.getElementById("inpPower").value.trim();
+  const troop1Raw = document.getElementById("inpTroop1").value.trim();
+  const killsRaw = document.getElementById("inpKills").value.trim();
   const msgEl = document.getElementById("formMsg");
 
-  if(!name || !server || !power || selectedTroops.size === 0){
+  if(!name || !server || !powerRaw || selectedTroops.size === 0){
     msgEl.className = "msg err";
     msgEl.textContent = i18n[currentLang].errFields;
     return;
   }
 
   const entry = {
-    name, server, power: Number(power), troop1Power: troop1 ? Number(troop1) : 0,
-    kills: kills ? Number(kills) : 0,
+    name, server, power: parseShorthand(powerRaw), troop1Power: parseShorthand(troop1Raw),
+    kills: parseShorthand(killsRaw),
     troops: Array.from(selectedTroops),
     submittedAt: Date.now()
   };
@@ -457,10 +475,10 @@ function renderTable(data){
     tr.innerHTML = `
       <td>${escapeHtml(e.name||"")}</td>
       <td>${escapeHtml(e.server||"")}</td>
-      <td class="power-val">${Number(e.power||0).toLocaleString()}</td>
-      <td>${Number(e.troop1Power||0).toLocaleString()}</td>
+      <td class="power-val">${formatShorthand(e.power)}</td>
+      <td>${formatShorthand(e.troop1Power)}</td>
       <td>${troopLabels}</td>
-      <td>${Number(e.kills||0).toLocaleString()}</td>
+      <td>${formatShorthand(e.kills)}</td>
       <td><button class="del-btn" data-key="${key}">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -477,6 +495,13 @@ function escapeHtml(str){
   const d = document.createElement("div");
   d.textContent = str;
   return d.innerHTML;
+}
+function formatShorthand(num){
+  num = Number(num) || 0;
+  if(num >= 1e9) return (num/1e9).toFixed(num % 1e9 === 0 ? 0 : 2).replace(/\.00$/,"") + "G";
+  if(num >= 1e6) return (num/1e6).toFixed(num % 1e6 === 0 ? 0 : 2).replace(/\.00$/,"") + "M";
+  if(num >= 1e3) return (num/1e3).toFixed(num % 1e3 === 0 ? 0 : 2).replace(/\.00$/,"") + "k";
+  return String(num);
 }
 
 // ---------- excel export ----------
