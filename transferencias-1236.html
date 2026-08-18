@@ -171,7 +171,7 @@
 <main>
   <div class="tabs">
     <button class="tab active" data-tab="form" data-i18n="tabRegister">Register</button>
-    <button class="tab" data-tab="admin" data-i18n="tabAdmin">Admin</button>
+    <button class="tab" data-tab="admin" data-i18n="tabAdmin" id="tabAdminBtn" style="display:none;">Admin</button>
   </div>
 
   <!-- REGISTRATION PANEL -->
@@ -184,6 +184,10 @@
     <div class="field">
       <label data-i18n="labelServer">Current Server</label>
       <input type="text" id="inpServer" placeholder="Ex: 1198" data-i18n-ph="phServer">
+    </div>
+    <div class="field">
+      <label data-i18n="labelCurrentAlliance">Current Alliance</label>
+      <input type="text" id="inpCurrentAlliance" placeholder="Ex: H03s" data-i18n-ph="phCurrentAlliance">
     </div>
     <div class="field">
       <label data-i18n="labelInterestedAlliance">Which alliance are you interested in?</label>
@@ -269,6 +273,7 @@
             <tr>
               <th data-i18n="thName">Name</th>
               <th data-i18n="thServer">Server</th>
+              <th data-i18n="thCurrentAlliance">Current Alliance</th>
               <th data-i18n="thInterestedAlliance">Interested In</th>
               <th data-i18n="thPower">Power</th>
               <th data-i18n="thTroop1">Troop 1</th>
@@ -300,12 +305,18 @@ const firebaseConfig = {
   appId: "1:92441567190:web:794ef2ad5313fb36200e77"
 };
 const ADMIN_PIN = "2026";
+const ADMIN_LINK_KEY = "ho3s1236admin"; // secret value for ?admin= in the URL — change this anytime
 const DB_NODE = "transferencias-1236"; // separate node, doesn't touch existing DS data
 /* ======================================================= */
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const ref = db.ref(DB_NODE);
+
+// ---------- reveal Admin tab only via secret link (?admin=ho3s1236admin) ----------
+if(new URLSearchParams(window.location.search).get("admin") === ADMIN_LINK_KEY){
+  document.getElementById("tabAdminBtn").style.display = "";
+}
 
 // ---------- i18n ----------
 const i18n = {
@@ -315,6 +326,7 @@ const i18n = {
     tabRegister:"Cadastrar", tabAdmin:"Admin",
     labelName:"Nome do Jogador", phName:"Ex: DesertFox",
     labelServer:"Servidor Atual", phServer:"Ex: 1198",
+    labelCurrentAlliance:"Aliança Atual", phCurrentAlliance:"Ex: H03s",
     labelInterestedAlliance:"Qual aliança você tem interesse?", phInterestedAlliance:"Ex: H03s",
     labelPower:"Poder Total do Herói (PTH)", phPower:"Ex: 1k ou 1M ou 1G",
     labelTroop1:"Poder do Primeiro Esquadrão", phTroop1:"Ex: 1k ou 1M ou 1G",
@@ -327,7 +339,7 @@ const i18n = {
     btnSubmit:"Enviar Cadastro",
     pinPrompt:"Acesso admin — digite o PIN", btnUnlock:"Desbloquear",
     registered:"Cadastrados: ", btnExport:"⬇ Exportar Excel",
-    thName:"Nome", thServer:"Servidor", thInterestedAlliance:"Interesse em", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
+    thName:"Nome", thServer:"Servidor", thCurrentAlliance:"Aliança Atual", thInterestedAlliance:"Interesse em", thPower:"Poder", thTroop1:"1º Esquadrão", thTroops:"Tropas", thKills:"Abates",
     thSeat:"Assento", thProf:"Nível", thExtra:"Obs",
     emptyState:"Nenhum cadastro ainda.",
     okMsg:"Cadastro enviado com sucesso!",
@@ -341,6 +353,7 @@ const i18n = {
     tabRegister:"Register", tabAdmin:"Admin",
     labelName:"Player Name", phName:"E.g. DesertFox",
     labelServer:"Current Server", phServer:"E.g. 1198",
+    labelCurrentAlliance:"Current Alliance", phCurrentAlliance:"E.g. H03s",
     labelInterestedAlliance:"Which alliance are you interested in?", phInterestedAlliance:"E.g. H03s",
     labelPower:"Total Hero Power (THP)", phPower:"E.g. 1k or 1M or 1G",
     labelTroop1:"First Squad Power", phTroop1:"E.g. 1k or 1M or 1G",
@@ -353,7 +366,7 @@ const i18n = {
     btnSubmit:"Submit Registration",
     pinPrompt:"Admin access — enter PIN", btnUnlock:"Unlock",
     registered:"Registered: ", btnExport:"⬇ Export Excel",
-    thName:"Name", thServer:"Server", thInterestedAlliance:"Interested In", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
+    thName:"Name", thServer:"Server", thCurrentAlliance:"Current Alliance", thInterestedAlliance:"Interested In", thPower:"Power", thTroop1:"1st Squad", thTroops:"Troops", thKills:"Kills",
     thSeat:"Seat", thProf:"Level", thExtra:"Notes",
     emptyState:"No registrations yet.",
     okMsg:"Registration submitted successfully!",
@@ -367,6 +380,7 @@ const i18n = {
     tabRegister:"Registrar", tabAdmin:"Admin",
     labelName:"Nombre del Jugador", phName:"Ej: DesertFox",
     labelServer:"Servidor Actual", phServer:"Ej: 1198",
+    labelCurrentAlliance:"Alianza Actual", phCurrentAlliance:"Ej: H03s",
     labelInterestedAlliance:"¿En qué alianza está interesado?", phInterestedAlliance:"Ej: H03s",
     labelPower:"Poder Total del Héroe (PTH)", phPower:"Ej: 1k o 1M o 1G",
     labelTroop1:"Poder del Primer Escuadrón", phTroop1:"Ej: 1k o 1M o 1G",
@@ -379,7 +393,7 @@ const i18n = {
     btnSubmit:"Enviar Registro",
     pinPrompt:"Acceso admin — ingrese el PIN", btnUnlock:"Desbloquear",
     registered:"Registrados: ", btnExport:"⬇ Exportar Excel",
-    thName:"Nombre", thServer:"Servidor", thInterestedAlliance:"Interés en", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
+    thName:"Nombre", thServer:"Servidor", thCurrentAlliance:"Alianza Actual", thInterestedAlliance:"Interés en", thPower:"Poder", thTroop1:"1er Escuadrón", thTroops:"Tropas", thKills:"Bajas",
     thSeat:"Asiento", thProf:"Nivel", thExtra:"Notas",
     emptyState:"Aún no hay registros.",
     okMsg:"¡Registro enviado con éxito!",
@@ -456,6 +470,7 @@ document.querySelectorAll("#seatColorGroup .radio-option").forEach(opt=>{
 document.getElementById("btnSubmit").addEventListener("click", ()=>{
   const name = document.getElementById("inpName").value.trim();
   const server = document.getElementById("inpServer").value.trim();
+  const currentAlliance = document.getElementById("inpCurrentAlliance").value.trim();
   const interestedAlliance = document.getElementById("inpInterestedAlliance").value.trim();
   const powerRaw = document.getElementById("inpPower").value.trim();
   const troop1Raw = document.getElementById("inpTroop1").value.trim();
@@ -471,7 +486,7 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
   }
 
   const entry = {
-    name, server, interestedAlliance,
+    name, server, currentAlliance, interestedAlliance,
     power: parseShorthand(powerRaw), troop1Power: parseShorthand(troop1Raw),
     kills: parseShorthand(killsRaw),
     troops: Array.from(selectedTroops),
@@ -484,6 +499,7 @@ document.getElementById("btnSubmit").addEventListener("click", ()=>{
     msgEl.textContent = i18n[currentLang].okMsg;
     document.getElementById("inpName").value = "";
     document.getElementById("inpServer").value = "";
+    document.getElementById("inpCurrentAlliance").value = "";
     document.getElementById("inpInterestedAlliance").value = "";
     document.getElementById("inpPower").value = "";
     document.getElementById("inpTroop1").value = "";
@@ -553,6 +569,7 @@ function renderTable(data){
     tr.innerHTML = `
       <td>${escapeHtml(e.name||"")}</td>
       <td>${escapeHtml(e.server||"")}</td>
+      <td>${escapeHtml(e.currentAlliance||"")}</td>
       <td>${escapeHtml(e.interestedAlliance||"")}</td>
       <td class="power-val">${formatShorthand(e.power)}</td>
       <td>${formatShorthand(e.troop1Power)}</td>
@@ -591,6 +608,7 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
   const rows = Object.values(lastData).map(e=>({
     Name: e.name,
     "Current Server": e.server,
+    "Current Alliance": e.currentAlliance,
     "Interested Alliance": e.interestedAlliance,
     "Hero Power": e.power,
     "First Squad Power": e.troop1Power,
