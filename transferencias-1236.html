@@ -133,6 +133,12 @@
   .troop-pill svg{width:13px; height:13px; fill:var(--signal-bright); flex-shrink:0;}
   .empty-state{text-align:center; padding:60px 20px; color:var(--sand-500); font-size:0.85rem;}
   .del-btn{background:none; border:none; color:var(--sand-700); cursor:pointer; font-size:0.9rem;}
+  .notes-cell{
+    display:block; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    cursor:pointer; text-decoration:underline dotted var(--sand-700); text-underline-offset:3px;
+  }
+  td{ max-width:180px; }
+  td.power-val, td:has(.troop-pill){ max-width:none; }
   .del-btn:hover{color:var(--signal);}
   ::placeholder{color:var(--sand-700);}
   .table-wrap{overflow-x:auto;}
@@ -171,7 +177,6 @@
 <main>
   <div class="tabs">
     <button class="tab active" data-tab="form" data-i18n="tabRegister">Register</button>
-    <button class="tab" data-tab="admin" data-i18n="tabAdmin" id="tabAdminBtn" style="display:none;">Admin</button>
   </div>
 
   <!-- REGISTRATION PANEL -->
@@ -291,6 +296,10 @@
       <div class="empty-state" id="emptyState" style="display:none;" data-i18n="emptyState">No registrations yet.</div>
     </div>
   </section>
+
+  <div style="text-align:center; margin-top:40px; opacity:0.5;">
+    <a href="#" id="adminAreaLink" style="color:var(--sand-500); font-size:0.75rem; text-decoration:none; letter-spacing:0.05em;" data-i18n="adminAreaLink">🛡️ Admin area</a>
+  </div>
 </main>
 
 <script>
@@ -305,7 +314,6 @@ const firebaseConfig = {
   appId: "1:92441567190:web:794ef2ad5313fb36200e77"
 };
 const ADMIN_PIN = "2026";
-const ADMIN_LINK_KEY = "ho3s1236admin"; // secret value for ?admin= in the URL — change this anytime
 const DB_NODE = "transferencias-1236"; // separate node, doesn't touch existing DS data
 /* ======================================================= */
 
@@ -313,17 +321,19 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const ref = db.ref(DB_NODE);
 
-// ---------- reveal Admin tab only via secret link (?admin=ho3s1236admin) ----------
-if(new URLSearchParams(window.location.search).get("admin") === ADMIN_LINK_KEY){
-  document.getElementById("tabAdminBtn").style.display = "";
-}
+// ---------- reveal Admin panel via footer link ----------
+document.getElementById("adminAreaLink").addEventListener("click", (e)=>{
+  e.preventDefault();
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-admin").classList.add("active");
+});
 
 // ---------- i18n ----------
 const i18n = {
   pt:{
     eyebrow:"Cadastro de Transferência", subtitle:"Entrada de Jogadores",
     introMsg:"Procurando jogadores fortes, ativos e engajados para o Server 1236! Se você quer fazer parte de um server competitivo com boa vibe, deixa suas informações abaixo. 🔥🏆",
-    tabRegister:"Cadastrar", tabAdmin:"Admin",
+    tabRegister:"Cadastrar", tabAdmin:"Admin", adminAreaLink:"🛡️ Área Admin",
     labelName:"Nome do Jogador", phName:"Ex: DesertFox",
     labelServer:"Servidor Atual", phServer:"Ex: 1198",
     labelCurrentAlliance:"Aliança Atual", phCurrentAlliance:"Ex: H03s",
@@ -333,7 +343,7 @@ const i18n = {
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Mísseis", troopAircraft:"Aeronaves",
     labelKills:"Abates", phKills:"Ex: 1k ou 1M ou 1G",
     shorthandHint:"Pode usar k (mil), M (milhão) ou G (bilhão) — ex: 1k ou 1M ou 1G",
-    labelSeatColor:"Cor do Assento", seatGold:"Dourado", seatPurple:"Roxo", seatBlue:"Azul", seatWhite:"Branco",
+    labelSeatColor:"Cor do Assento", seatGold:"Dourado", seatPurple:"Roxo (195m-245m PTH)", seatBlue:"Azul (145m-195m PTH)", seatWhite:"Branco (<145m PTH)",
     labelProfLevel:"Nível Profissional", phProfLevel:"",
     labelExtra:"Algo mais que devemos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Cadastro",
@@ -350,7 +360,7 @@ const i18n = {
   en:{
     eyebrow:"Server Transfer Intake", subtitle:"Incoming Roster",
     introMsg:"Looking for strong, active, and fun players for Server 1236! If you want to be part of a competitive server with good vibes, drop your info below. 🔥🏆",
-    tabRegister:"Register", tabAdmin:"Admin",
+    tabRegister:"Register", tabAdmin:"Admin", adminAreaLink:"🛡️ Admin area",
     labelName:"Player Name", phName:"E.g. DesertFox",
     labelServer:"Current Server", phServer:"E.g. 1198",
     labelCurrentAlliance:"Current Alliance", phCurrentAlliance:"E.g. H03s",
@@ -360,7 +370,7 @@ const i18n = {
     labelTroops:"Troop Types", troopTanks:"Tanks", troopMissiles:"Missiles", troopAircraft:"Aircraft",
     labelKills:"Kills", phKills:"E.g. 1k or 1M or 1G",
     shorthandHint:"You can use k (thousand), M (million), or G (billion) — e.g. 1k or 1M or 1G",
-    labelSeatColor:"Seat Color", seatGold:"Gold", seatPurple:"Purple", seatBlue:"Blue", seatWhite:"White",
+    labelSeatColor:"Seat Color", seatGold:"Gold", seatPurple:"Purple (195m-245m THP)", seatBlue:"Blue (145m-195m THP)", seatWhite:"White (<145m THP)",
     labelProfLevel:"Professional Level", phProfLevel:"",
     labelExtra:"Anything else we should know?", phExtra:"Optional",
     btnSubmit:"Submit Registration",
@@ -377,7 +387,7 @@ const i18n = {
   es:{
     eyebrow:"Registro de Transferencia", subtitle:"Ingreso de Jugadores",
     introMsg:"¡Buscando jugadores fuertes, activos y comprometidos para el Server 1236! Si quieres ser parte de un servidor competitivo con buena vibra, deja tu información abajo. 🔥🏆",
-    tabRegister:"Registrar", tabAdmin:"Admin",
+    tabRegister:"Registrar", tabAdmin:"Admin", adminAreaLink:"🛡️ Área Admin",
     labelName:"Nombre del Jugador", phName:"Ej: DesertFox",
     labelServer:"Servidor Actual", phServer:"Ej: 1198",
     labelCurrentAlliance:"Alianza Actual", phCurrentAlliance:"Ej: H03s",
@@ -387,7 +397,7 @@ const i18n = {
     labelTroops:"Tipos de Tropas", troopTanks:"Tanques", troopMissiles:"Misiles", troopAircraft:"Aeronaves",
     labelKills:"Bajas", phKills:"Ej: 1k o 1M o 1G",
     shorthandHint:"Puede usar k (mil), M (millón) o G (mil millones) — ej: 1k o 1M o 1G",
-    labelSeatColor:"Color del Asiento", seatGold:"Dorado", seatPurple:"Morado", seatBlue:"Azul", seatWhite:"Blanco",
+    labelSeatColor:"Color del Asiento", seatGold:"Dorado", seatPurple:"Morado (195m-245m PTH)", seatBlue:"Azul (145m-195m PTH)", seatWhite:"Blanco (<145m PTH)",
     labelProfLevel:"Nivel Profesional", phProfLevel:"",
     labelExtra:"¿Algo más que debamos saber?", phExtra:"Opcional",
     btnSubmit:"Enviar Registro",
@@ -575,9 +585,9 @@ function renderTable(data){
       <td>${formatShorthand(e.troop1Power)}</td>
       <td>${troopLabels}</td>
       <td>${formatShorthand(e.kills)}</td>
-      <td>${escapeHtml(seatLabel)}</td>
+      <td><span class="notes-cell" style="text-decoration:none; cursor:default;" title="${escapeHtml(seatLabel)}">${escapeHtml(seatLabel)}</span></td>
       <td>${escapeHtml(e.profLevel||"")}</td>
-      <td>${escapeHtml(e.extra||"")}</td>
+      <td><span class="notes-cell" title="${escapeHtml(e.extra||"")}" data-fulltext="${escapeHtml(e.extra||"")}">${escapeHtml(e.extra||"")}</span></td>
       <td><button class="del-btn" data-key="${key}">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -587,6 +597,12 @@ function renderTable(data){
       if(confirm(i18n[currentLang].confirmDel)){
         ref.child(btn.dataset.key).remove();
       }
+    });
+  });
+  tbody.querySelectorAll(".notes-cell").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const full = el.dataset.fulltext;
+      if(full) alert(full);
     });
   });
 }
@@ -605,25 +621,73 @@ function formatShorthand(num){
 
 // ---------- excel export ----------
 document.getElementById("btnExport").addEventListener("click", ()=>{
+  const troopNameMap = { tanks:"Tanks", missiles:"Missiles", aircraft:"Aircraft" };
   const rows = Object.values(lastData).map(e=>({
-    Name: e.name,
-    "Current Server": e.server,
-    "Current Alliance": e.currentAlliance,
-    "Interested Alliance": e.interestedAlliance,
-    "Hero Power": e.power,
-    "First Squad Power": e.troop1Power,
-    Troops: (e.troops||[]).join(", "),
-    Kills: e.kills,
-    "Seat Color": e.seatColor,
-    "Professional Level": e.profLevel,
-    "Notes": e.extra,
+    Name: e.name || "",
+    "Current Server": e.server || "",
+    "Current Alliance": e.currentAlliance || "",
+    "Interested Alliance": e.interestedAlliance || "",
+    "Hero Power": formatShorthand(e.power),
+    "First Squad Power": formatShorthand(e.troop1Power),
+    Troops: (e.troops||[]).map(t=>troopNameMap[t]||t).join(", "),
+    Kills: formatShorthand(e.kills),
+    "Seat Color": e.seatColor ? e.seatColor.charAt(0).toUpperCase()+e.seatColor.slice(1) : "",
+    "Professional Level": e.profLevel || "",
+    "Notes": e.extra || "",
     "Submitted At": e.submittedAt ? new Date(e.submittedAt).toLocaleString() : ""
   }));
   if(rows.length === 0) return;
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const headers = ["Name","Current Server","Current Alliance","Interested Alliance","Hero Power","First Squad Power","Troops","Kills","Seat Color","Professional Level","Notes","Submitted At"];
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws["!cols"] = [
+    { wch: 16 }, // Name
+    { wch: 12 }, // Current Server
+    { wch: 15 }, // Current Alliance
+    { wch: 16 }, // Interested Alliance
+    { wch: 11 }, // Hero Power
+    { wch: 14 }, // First Squad Power
+    { wch: 20 }, // Troops
+    { wch: 10 }, // Kills
+    { wch: 24 }, // Seat Color
+    { wch: 15 }, // Professional Level
+    { wch: 28 }, // Notes
+    { wch: 18 }  // Submitted At
+  ];
+  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  ws["!views"] = [{ state: "frozen", ySplit: 1 }];
+  ws["!autofilter"] = { ref: ws["!ref"] };
+  ws["!rows"] = rows.map(()=>({ hpx: 20 })); // fixed row height so long notes don't blow up rows
+  ws["!rows"].unshift({ hpx: 22 }); // header row height
+
+  // Ensure body cells don't wrap text (keeps long notes on one line, truncated visually)
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+  for(let r = 1; r <= range.e.r; r++){
+    for(let c = 0; c <= range.e.c; c++){
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if(ws[cellRef]){
+        ws[cellRef].s = { alignment: { wrapText: false, vertical: "center" } };
+      }
+    }
+  }
+
+  // Style the header row: bold white text on a themed background
+  headers.forEach((h, i)=>{
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c: i });
+    if(ws[cellRef]){
+      ws[cellRef].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { patternType: "solid", fgColor: { rgb: "C4482E" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          bottom: { style: "thin", color: { rgb: "8A6A44" } }
+        }
+      };
+    }
+  });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Server 1236");
-  XLSX.writeFile(wb, "server-1236-transfers.xlsx");
+  XLSX.writeFile(wb, "server-1236-transfers.xlsx", { cellStyles: true });
 });
 
 applyLang("en");
