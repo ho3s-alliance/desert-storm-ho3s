@@ -313,7 +313,7 @@
       <div class="row-flex">
         <div>
           <label for="pPower">First squad power</label>
-          <input type="number" id="pPower" placeholder="e.g. 4200000" min="0" required>
+          <input type="text" id="pPower" placeholder="e.g. 57M" required>
         </div>
         <div>
           <label for="pType">Squad type</label>
@@ -503,7 +503,25 @@ function pillClass(type){
   if(type === "Missile") return "pill-missile";
   return "pill-aircraft";
 }
-function fmtPower(n){ return Number(n).toLocaleString('en-US'); }
+function fmtPower(n){
+  n = Number(n);
+  if(isNaN(n)) return '';
+  if(n >= 1e9) return (n % 1e9 === 0 ? (n/1e9) : (n/1e9).toFixed(1)) + 'B';
+  if(n >= 1e6) return (n % 1e6 === 0 ? (n/1e6) : (n/1e6).toFixed(1)) + 'M';
+  if(n >= 1e3) return (n % 1e3 === 0 ? (n/1e3) : (n/1e3).toFixed(1)) + 'K';
+  return n.toLocaleString('en-US');
+}
+function parsePower(input){
+  if(!input) return NaN;
+  const match = input.toString().trim().toUpperCase().replace(',', '.').match(/^([\d.]+)\s*([KMB]?)$/);
+  if(!match) return NaN;
+  let num = parseFloat(match[1]);
+  if(isNaN(num)) return NaN;
+  if(match[2] === 'K') num *= 1e3;
+  else if(match[2] === 'M') num *= 1e6;
+  else if(match[2] === 'B') num *= 1e9;
+  return num;
+}
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
 // ---------- Firebase listeners ----------
@@ -546,24 +564,33 @@ function deletePlayer(id){
 }
 
 // ---------- register form ----------
+function findPlayerIdByName(name){
+  const lower = name.trim().toLowerCase();
+  return Object.keys(players).find(id => (players[id].name || '').trim().toLowerCase() === lower);
+}
+
 document.getElementById('registerForm').addEventListener('submit', e => {
   e.preventDefault();
   if(registrationLocked) return;
   const name = document.getElementById('pName').value.trim();
-  const power = document.getElementById('pPower').value;
+  const power = parsePower(document.getElementById('pPower').value);
   const type = document.getElementById('pType').value;
   const statusEl = document.getElementById('registerStatus');
-  if(!name || !power || !type){ return; }
-  db.ref(`${ROOT}/players`).push({ name, power: Number(power), type, ts: Date.now() })
+  if(!name || isNaN(power) || !type){
+    statusEl.textContent = 'Enter power like 57M, 800K or a plain number.';
+    statusEl.className = 'status-msg err';
+    return;
+  }
+  const existingId = findPlayerIdByName(name);
+  const targetRef = existingId ? db.ref(`${ROOT}/players/${existingId}`) : db.ref(`${ROOT}/players`).push();
+  targetRef.set({ name, power, type, ts: Date.now() })
     .then(() => {
-      statusEl.textContent = 'Registered! You can see yourself in the list below.';
+      statusEl.textContent = existingId ? 'Updated! Your info has been refreshed.' : 'Registered! You can see yourself in the list below.';
       statusEl.className = 'status-msg ok';
       e.target.reset();
     })
-    .catch(() => { statusEl.textContent = 'Something went wrong. Please try again.'; statusEl.className = 'status-msg err'; });
+    .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
 });
-
-// ---------- suggestions ----------
 document.getElementById('suggestForm').addEventListener('submit', e => {
   e.preventDefault();
   const text = document.getElementById('suggestText').value.trim();
@@ -733,7 +760,7 @@ function deleteTrainDate(id){
 document.getElementById('exportBtn').addEventListener('click', () => {
   const wb = XLSX.utils.book_new();
 
-  const playersRows = Object.values(players).map(p => ({ Name: p.name, 'Squad Power': p.power, Type: p.type }));
+  const playersRows = Object.values(players).map(p => ({ Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(playersRows), 'Players');
 
   const evRows = [];
