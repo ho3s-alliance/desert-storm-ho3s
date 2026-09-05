@@ -281,6 +281,8 @@
 <body>
 <div class="wrap">
 
+<div id="publicView">
+
   <header class="hero">
     <svg class="mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M50 8 L58 30 A28 28 0 0 1 74 62 L92 66 L74 78 A28 28 0 0 1 42 74 L26 90 L30 68 A28 28 0 0 1 46 38 Z"
@@ -354,7 +356,9 @@
     </div>
   </section>
 
-  <!-- ===================== ADMIN PANEL ===================== -->
+</div>
+
+  <!-- ===================== ADMIN PANEL (own screen) ===================== -->
   <section class="hidden" id="adminPanel">
 
     <div class="top-row">
@@ -363,6 +367,7 @@
         Registration open
         <div class="switch on" id="lockSwitch"></div>
       </div>
+      <button class="btn-ghost btn-small" id="exitAdminBtn">Exit admin</button>
     </div>
 
     <div class="adm-tabs">
@@ -590,12 +595,21 @@ document.getElementById('adminPinSubmit').addEventListener('click', () => {
   const statusEl = document.getElementById('adminPinStatus');
   if(val === ADMIN_PIN){
     isAdmin = true;
-    document.getElementById('adminGateCard').classList.add('hidden');
+    document.getElementById('publicView').classList.add('hidden');
     document.getElementById('adminPanel').classList.remove('hidden');
+    document.getElementById('adminPin').value = '';
     statusEl.textContent = '';
+    window.scrollTo(0,0);
   } else {
     statusEl.textContent = 'Incorrect PIN.';
   }
+});
+document.getElementById('exitAdminBtn').addEventListener('click', () => {
+  isAdmin = false;
+  document.getElementById('adminPanel').classList.add('hidden');
+  document.getElementById('adminGateCard').classList.add('hidden');
+  document.getElementById('publicView').classList.remove('hidden');
+  window.scrollTo(0,0);
 });
 
 // ---------- admin tabs ----------
