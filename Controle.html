@@ -385,8 +385,8 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Name</th><th>Power</th><th>Type</th><th></th></tr></thead>
-            <tbody id="adminPlayersBody"><tr><td colspan="4" class="empty-note">No players yet.</td></tr></tbody>
+            <thead><tr><th>Name</th><th>Power</th><th>Type</th><th>Points</th><th></th></tr></thead>
+            <tbody id="adminPlayersBody"><tr><td colspan="5" class="empty-note">No players yet.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -527,7 +527,7 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s; return 
 // ---------- Firebase listeners ----------
 db.ref(`${ROOT}/players`).on('value', snap => { players = snap.val() || {}; renderPlayers(); renderTrainTable(); renderParticipation(); });
 db.ref(`${ROOT}/events`).on('value', snap => { events = snap.val() || {}; renderEventsList(); renderEventSelect(); });
-db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderParticipation(); });
+db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderParticipation(); renderAdminPlayers(); });
 db.ref(`${ROOT}/trainDates`).on('value', snap => { trainDates = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/trainAttendance`).on('value', snap => { trainAttendance = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/suggestions`).on('value', snap => { suggestions = snap.val() || {}; renderSuggestions(); });
@@ -545,13 +545,18 @@ function renderPlayers(){
   renderAdminPlayers();
 }
 
+function pointsFor(pid){
+  return Object.keys(participation).filter(evId => participation[evId] && participation[evId][pid]).length;
+}
+
 function renderAdminPlayers(){
   const body = document.getElementById('adminPlayersBody');
   const ids = Object.keys(players);
-  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="4" class="empty-note">No players yet.</td></tr>'; return; }
-  body.innerHTML = ids.map(id => {
+  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="5" class="empty-note">No players yet.</td></tr>'; return; }
+  const sorted = ids.slice().sort((a,b) => pointsFor(b) - pointsFor(a));
+  body.innerHTML = sorted.map(id => {
     const p = players[id];
-    return `<tr><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td>
+    return `<tr><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
       <td><button class="btn-danger" onclick="deletePlayer('${id}')">Remove</button></td></tr>`;
   }).join('');
 }
@@ -759,6 +764,23 @@ function deleteTrainDate(id){
 // ---------- export ----------
 document.getElementById('exportBtn').addEventListener('click', () => {
   const wb = XLSX.utils.book_new();
+
+  const playerIds = Object.keys(players).sort((a,b) => pointsFor(b) - pointsFor(a));
+  const summaryRows = playerIds.map((pid, idx) => {
+    const p = players[pid];
+    const wentCount = Object.keys(trainDates).filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'yes').length;
+    const missedCount = Object.keys(trainDates).filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'no').length;
+    return {
+      Rank: idx + 1,
+      Name: p.name,
+      'Squad Power': fmtPower(p.power),
+      Type: p.type,
+      Points: pointsFor(pid),
+      'Train Went': wentCount,
+      'Train Missed': missedCount
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
 
   const playersRows = Object.values(players).map(p => ({ Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(playersRows), 'Players');
