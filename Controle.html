@@ -519,6 +519,7 @@ function parsePower(input){
   if(match[2] === 'K') num *= 1e3;
   else if(match[2] === 'M') num *= 1e6;
   else if(match[2] === 'B') num *= 1e9;
+  else if(num < 10000) num *= 1e6; // no letter given (e.g. "73.36") — assume millions, the game's usual scale
   return num;
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -556,8 +557,25 @@ function renderAdminPlayers(){
   body.innerHTML = sorted.map(id => {
     const p = players[id];
     return `<tr><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
-      <td><button class="btn-danger" onclick="deletePlayer('${id}')">Remove</button></td></tr>`;
+      <td style="white-space:nowrap;">
+        <button class="btn-ghost btn-small" onclick="editPlayer('${id}')">Edit</button>
+        <button class="btn-danger" onclick="deletePlayer('${id}')">Remove</button>
+      </td></tr>`;
   }).join('');
+}
+
+function editPlayer(id){
+  const p = players[id];
+  if(!p) return;
+  const newPowerInput = prompt(`New squad power for ${p.name} (e.g. 73M):`, fmtPower(p.power));
+  if(newPowerInput === null) return;
+  const newPower = parsePower(newPowerInput);
+  if(isNaN(newPower)){ alert('Could not read that power value — use something like 57M, 800K or a plain number.'); return; }
+  const newType = prompt('Squad type (Tank, Missile or Aircraft):', p.type);
+  if(newType === null) return;
+  const cleanType = ['Tank','Missile','Aircraft'].find(t => t.toLowerCase() === newType.trim().toLowerCase());
+  if(!cleanType){ alert('Type must be exactly Tank, Missile or Aircraft.'); return; }
+  db.ref(`${ROOT}/players/${id}`).update({ power: newPower, type: cleanType });
 }
 
 function deletePlayer(id){
