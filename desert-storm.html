@@ -16,6 +16,10 @@
   input,select,textarea{font-family:inherit;}
   ::placeholder{color:#6b7280;}
   .hidden{display:none !important;}
+  .tab-btn{color:#6b7280;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}
+  .tab-btn.active{color:#EDE7D9;border-bottom-color:#ef4444;}
+  .roster-table th{font-weight:600;}
+  .roster-table td, .roster-table th{white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -43,7 +47,14 @@
       </div>
     </div>
 
-    <!-- Registration form -->
+    <!-- Tabs -->
+    <div class="flex justify-center gap-8 mb-6 border-b border-white/10">
+      <button id="tabRegisterBtn" data-tab="register" class="tab-btn active pb-3 px-1 font-display text-sm tracking-widest uppercase">Register</button>
+      <button id="tabAdminBtn" data-tab="admin" class="tab-btn pb-3 px-1 font-display text-sm tracking-widest uppercase">🛡 Admin</button>
+    </div>
+
+    <!-- Registration tab -->
+    <div id="tabRegister">
     <div class="rounded-2xl p-6 mb-6 border border-white/10" style="background:#141316">
       <div class="flex items-center gap-2 mb-5">
         <span style="color:#ef4444">◆</span>
@@ -79,18 +90,18 @@
         Register
       </button>
     </div>
+    </div>
+    <!-- /Registration tab -->
 
-    <!-- Admin area -->
-    <div class="text-center">
-      <button id="openAdminBtn" class="text-xs text-gray-600 hover:text-gray-400 mx-auto">🛡 Admin area</button>
-
-      <div id="adminPanel" class="hidden rounded-2xl p-5 border border-white/10 text-left" style="background:#141316">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs uppercase tracking-widest text-gray-400">🛡 Admin</span>
-          <button id="closeAdminBtn" class="text-gray-500">✕</button>
-        </div>
+    <!-- Admin tab -->
+    <div id="tabAdmin" class="hidden">
+      <div class="rounded-2xl p-5 border border-white/10 text-left" style="background:#141316">
 
         <div id="pinGate">
+          <div class="flex items-center gap-2 mb-4">
+            <span style="color:#E8B923">🛡</span>
+            <h2 class="font-display text-lg" style="color:#EDE7D9">Admin login</h2>
+          </div>
           <div class="flex gap-2">
             <input id="pinInput" type="password" placeholder="PIN"
               class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
@@ -100,6 +111,10 @@
         </div>
 
         <div id="adminContent" class="hidden space-y-5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-widest text-gray-400">🛡 Admin dashboard</span>
+            <button id="logoutAdminBtn" class="text-gray-500 hover:text-gray-300 text-xs">Log out</button>
+          </div>
           <div>
             <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Week date</label>
             <div class="flex gap-2">
@@ -151,7 +166,21 @@
               <button data-filter="B" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">Team B</button>
             </div>
 
-            <div id="rosterList" class="space-y-2"></div>
+            <div class="overflow-x-auto -mx-1">
+              <table class="roster-table w-full text-xs border-collapse">
+                <thead>
+                  <tr class="text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/10">
+                    <th class="text-left py-2 pr-2">#</th>
+                    <th class="text-left py-2 pr-2">Name</th>
+                    <th class="text-left py-2 pr-2">Team</th>
+                    <th class="text-left py-2 pr-2">Type</th>
+                    <th class="text-right py-2 pr-2">Power</th>
+                    <th class="py-2"></th>
+                  </tr>
+                </thead>
+                <tbody id="rosterTableBody"></tbody>
+              </table>
+            </div>
           </div>
 
           <div id="resetSection">
@@ -167,6 +196,7 @@
         </div>
       </div>
     </div>
+    <!-- /Admin tab -->
 
   </div>
 </div>
@@ -276,18 +306,23 @@
     btn.disabled = false; btn.textContent = "Register";
   });
 
+  // --- tabs ---
+  function setActiveTab(tab) {
+    document.getElementById("tabRegister").classList.toggle("hidden", tab !== "register");
+    document.getElementById("tabAdmin").classList.toggle("hidden", tab !== "admin");
+    document.getElementById("tabRegisterBtn").classList.toggle("active", tab === "register");
+    document.getElementById("tabAdminBtn").classList.toggle("active", tab === "admin");
+  }
+  document.getElementById("tabRegisterBtn").addEventListener("click", () => setActiveTab("register"));
+  document.getElementById("tabAdminBtn").addEventListener("click", () => setActiveTab("admin"));
+
   // --- admin area ---
-  document.getElementById("openAdminBtn").addEventListener("click", () => {
-    document.getElementById("openAdminBtn").classList.add("hidden");
-    document.getElementById("adminPanel").classList.remove("hidden");
-  });
-  document.getElementById("closeAdminBtn").addEventListener("click", () => {
-    document.getElementById("adminPanel").classList.add("hidden");
-    document.getElementById("openAdminBtn").classList.remove("hidden");
+  document.getElementById("logoutAdminBtn").addEventListener("click", () => {
     document.getElementById("adminContent").classList.add("hidden");
     document.getElementById("pinGate").classList.remove("hidden");
     document.getElementById("pinInput").value = "";
     if (rosterRef) { rosterRef.off(); rosterRef = null; }
+    setActiveTab("register");
   });
 
   let rosterRef = null;
@@ -349,33 +384,26 @@
     document.getElementById("countB").textContent = countB;
     document.getElementById("exportBtn").classList.toggle("hidden", players.length === 0);
 
-    const list = document.getElementById("rosterList");
+    const tbody = document.getElementById("rosterTableBody");
     if (filtered.length === 0) {
-      list.innerHTML = '<p class="text-center text-gray-500 text-xs py-4">No players registered yet.</p>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 text-xs py-4">No players registered yet.</td></tr>';
       return;
     }
-    list.innerHTML = filtered.map((p, i) => {
-      const pct = Math.max(4, (parsePower(p.power) / maxPower) * 100);
-      const barColor = p.team === "A" ? "#ef4444" : "#3b82f6";
+    tbody.innerHTML = filtered.map((p, i) => {
       const badgeClass = p.team === "A" ? "bg-red-950/60 text-red-300" : "bg-blue-950/60 text-blue-300";
       return (
-        '<div class="flex items-center gap-2">' +
-          '<span class="w-4 text-right text-xs font-bold" style="color:#E8B923">' + (i + 1) + '</span>' +
-          '<div class="flex-1 min-w-0">' +
-            '<p class="text-white text-sm font-medium truncate">' + escapeHtml(p.name) + '</p>' +
-            '<div class="h-1 rounded-full bg-white/10 mt-1 overflow-hidden">' +
-              '<div class="h-full rounded-full" style="width:' + pct + '%;background:' + barColor + '"></div>' +
-            '</div>' +
-          '</div>' +
-          '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + badgeClass + '">' + p.team + '</span>' +
-          (p.type ? '<span class="text-[9px] text-gray-500 w-14 text-right hidden sm:inline">' + escapeHtml(p.type) + '</span>' : '') +
-          '<span class="text-white text-xs font-bold w-12 text-right">' + escapeHtml(p.power) + '</span>' +
-          '<button class="remove-btn text-gray-600 hover:text-red-400" data-name="' + escapeHtml(p.name) + '">✕</button>' +
-        '</div>'
+        '<tr class="border-b border-white/5">' +
+          '<td class="py-2 pr-2 font-bold" style="color:#E8B923">' + (i + 1) + '</td>' +
+          '<td class="py-2 pr-2 text-white font-medium">' + escapeHtml(p.name) + '</td>' +
+          '<td class="py-2 pr-2"><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + badgeClass + '">' + p.team + '</span></td>' +
+          '<td class="py-2 pr-2 text-gray-400">' + escapeHtml(p.type || "-") + '</td>' +
+          '<td class="py-2 pr-2 text-white font-bold text-right">' + escapeHtml(p.power) + '</td>' +
+          '<td class="py-2 text-right"><button class="remove-btn text-gray-600 hover:text-red-400" data-name="' + escapeHtml(p.name) + '">✕</button></td>' +
+        '</tr>'
       );
     }).join("");
 
-    list.querySelectorAll(".remove-btn").forEach((btn) => {
+    tbody.querySelectorAll(".remove-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await db.ref(ROOT + "/players/" + slugify(btn.dataset.name)).remove();
       });
@@ -435,6 +463,11 @@
     const sorted = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
     const rows = sorted.map((p, i) => ({ Rank: i + 1, Name: p.name, Team: p.team === "A" ? "Team A" : "Team B", "Troop Type": p.type || "", "Troop Power": p.power }));
     const ws = XLSX.utils.json_to_sheet(rows);
+    const headers = ["Rank", "Name", "Team", "Troop Type", "Troop Power"];
+    ws["!cols"] = headers.map((key) => {
+      const maxLen = Math.max(key.length, ...rows.map((r) => String(r[key] ?? "").length));
+      return { wch: maxLen + 2 };
+    });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Ranking");
     XLSX.writeFile(wb, "desert-storm-" + (currentWeek || "ranking") + ".xlsx");
