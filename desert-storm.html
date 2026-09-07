@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Desert Storm — Ho3s Alliance</title>
+<title>Desert Storm — TriP Alliance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
       </h1>
       <div class="h-px mt-5 mx-auto w-40" style="background:linear-gradient(90deg,#3b82f6,#E8B923,#ef4444)"></div>
       <div class="mt-4 flex items-center justify-center gap-2">
-        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">Ho3s Alliance</span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">TriP Alliance</span>
         <span id="connBadge" class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-gray-500">● checking...</span>
       </div>
     </div>
@@ -56,19 +56,26 @@
     <!-- Registration tab -->
     <div id="tabRegister">
     <div class="rounded-2xl p-6 mb-6 border border-white/10" style="background:#141316">
-      <div class="flex items-center gap-2 mb-5">
+      <div class="flex items-center gap-2 mb-1">
         <span style="color:#ef4444">◆</span>
         <h2 class="font-display text-lg" style="color:#EDE7D9">Register your entry</h2>
       </div>
+      <p id="weekDisplay" class="text-xs text-amber-400/90 mb-4">📅 Loading event date...</p>
 
+      <div id="lockedNotice" class="hidden mb-4 rounded-xl border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+        🔒 Registrations are currently closed.
+      </div>
+
+      <div id="registerFormFields">
       <label class="block text-sm text-gray-400 mb-2">Player name</label>
       <input id="fName" placeholder="Your in-game name"
         class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 outline-none focus:border-yellow-500/60" />
 
       <label class="block text-sm text-gray-400 mb-2">Team</label>
-      <div class="grid grid-cols-2 gap-3 mb-4">
-        <button type="button" data-team="A" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300">Team A</button>
-        <button type="button" data-team="B" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300">Team B</button>
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <button type="button" data-team="A" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300 text-sm">Team A</button>
+        <button type="button" data-team="B" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300 text-sm">Team B</button>
+        <button type="button" data-team="N" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300 text-sm">A or B</button>
       </div>
 
       <label class="block text-sm text-gray-400 mb-2">Troop power</label>
@@ -89,6 +96,7 @@
       <button id="registerBtn" class="w-full py-3 rounded-xl font-semibold text-white" style="background:linear-gradient(90deg,#ef4444,#a855f7)">
         Register
       </button>
+      </div>
     </div>
     </div>
     <!-- /Registration tab -->
@@ -124,11 +132,19 @@
           </div>
 
           <div>
+            <button id="lockToggleBtn" class="w-full py-2.5 rounded-lg font-semibold text-sm border border-white/10 bg-black/30 text-gray-300">
+              🔒 Lock registrations
+            </button>
+            <p class="text-[10px] text-gray-500 mt-1">When locked, no one else can submit or edit their entry.</p>
+          </div>
+
+          <div>
             <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Add manually</label>
             <input id="mName" placeholder="Name" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60" />
-            <div class="grid grid-cols-2 gap-2 mb-2">
-              <button type="button" data-mteam="A" class="mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300">Team A</button>
-              <button type="button" data-mteam="B" class="mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300">Team B</button>
+            <div class="grid grid-cols-3 gap-2 mb-2">
+              <button type="button" data-mteam="A" class="mteam-btn py-2 rounded-lg text-xs border bg-black/30 border-white/10 text-gray-300">Team A</button>
+              <button type="button" data-mteam="B" class="mteam-btn py-2 rounded-lg text-xs border bg-black/30 border-white/10 text-gray-300">Team B</button>
+              <button type="button" data-mteam="N" class="mteam-btn py-2 rounded-lg text-xs border bg-black/30 border-white/10 text-gray-300">A or B</button>
             </div>
             <select id="mType" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60">
               <option value="" disabled selected>Select type</option>
@@ -149,21 +165,26 @@
               <button id="exportBtn" class="text-gray-400 hidden">⬇</button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="grid grid-cols-3 gap-2 mb-3">
               <div class="rounded-lg border border-red-500/50 bg-red-950/20 py-2 text-center">
-                <p class="text-[10px] uppercase tracking-widest text-red-300/80">Team A</p>
+                <p class="text-[9px] uppercase tracking-widest text-red-300/80">Team A</p>
                 <p id="countA" class="text-lg font-bold text-white">0</p>
               </div>
               <div class="rounded-lg border border-blue-400/50 bg-blue-950/20 py-2 text-center">
-                <p class="text-[10px] uppercase tracking-widest text-blue-300/80">Team B</p>
+                <p class="text-[9px] uppercase tracking-widest text-blue-300/80">Team B</p>
                 <p id="countB" class="text-lg font-bold text-white">0</p>
+              </div>
+              <div class="rounded-lg border border-purple-400/50 bg-purple-950/20 py-2 text-center">
+                <p class="text-[9px] uppercase tracking-widest text-purple-300/80">A or B</p>
+                <p id="countN" class="text-lg font-bold text-white">0</p>
               </div>
             </div>
 
-            <div class="flex gap-2 mb-3">
+            <div class="flex flex-wrap gap-2 mb-3">
               <button data-filter="all" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border bg-white/10 border-white/30 text-white">All</button>
               <button data-filter="A" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">Team A</button>
               <button data-filter="B" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">Team B</button>
+              <button data-filter="N" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">A or B</button>
             </div>
 
             <div class="overflow-x-auto -mx-1">
@@ -202,7 +223,8 @@
 </div>
 
 <script>
-  // Your Ho3s Alliance Firebase project — same one used by the other apps.
+  // TriP Alliance Firebase project — same one used by the other apps.
+  // (project id kept as "desert-storm-ho3s" internally so existing data keeps working)
   const firebaseConfig = {
     apiKey: "AIzaSyDVEYlOdV64jD3-asVuLoSmi4KZ_O1KlRE",
     authDomain: "desert-storm-ho3s.firebaseapp.com",
@@ -255,6 +277,38 @@
     else { el.textContent = "🔴 Offline"; el.className = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-red-400"; }
   });
 
+  // --- public: week date + lock status (visible to everyone, no login needed) ---
+  let isLocked = false;
+  db.ref(ROOT + "/week").on("value", (snap) => {
+    const w = snap.val();
+    const el = document.getElementById("weekDisplay");
+    if (w && w.date) el.textContent = "📅 Week of " + formatDate(w.date);
+    else el.textContent = "";
+  });
+  db.ref(ROOT + "/locked").on("value", (snap) => {
+    isLocked = !!snap.val();
+    document.getElementById("lockedNotice").classList.toggle("hidden", !isLocked);
+    document.getElementById("registerFormFields").classList.toggle("hidden", isLocked);
+    const lockBtn = document.getElementById("lockToggleBtn");
+    if (lockBtn) {
+      lockBtn.textContent = isLocked ? "🔓 Unlock registrations" : "🔒 Lock registrations";
+      lockBtn.className = "w-full py-2.5 rounded-lg font-semibold text-sm border " + (isLocked
+        ? "bg-red-950/40 border-red-500/60 text-red-300"
+        : "bg-black/30 border-white/10 text-gray-300");
+    }
+  });
+
+  function teamActiveClass(team) {
+    if (team === "A") return "bg-red-950/60 border-red-500 text-red-300";
+    if (team === "B") return "bg-blue-950/60 border-blue-400 text-blue-300";
+    return "bg-purple-950/60 border-purple-400 text-purple-300";
+  }
+  function teamLabel(team) {
+    if (team === "A") return "Team A";
+    if (team === "B") return "Team B";
+    return "A or B";
+  }
+
   // --- registration form ---
   let selectedTeam = null;
   document.querySelectorAll(".team-btn").forEach((btn) => {
@@ -262,10 +316,7 @@
       selectedTeam = btn.dataset.team;
       document.querySelectorAll(".team-btn").forEach((b) => {
         const active = b.dataset.team === selectedTeam;
-        const isA = b.dataset.team === "A";
-        b.className = "team-btn py-3 rounded-xl font-medium border " + (active
-          ? (isA ? "bg-red-950/60 border-red-500 text-red-300" : "bg-blue-950/60 border-blue-400 text-blue-300")
-          : "bg-black/30 border-white/10 text-gray-300");
+        b.className = "team-btn py-3 rounded-xl font-medium border text-sm " + (active ? teamActiveClass(b.dataset.team) : "bg-black/30 border-white/10 text-gray-300");
       });
     });
   });
@@ -287,8 +338,9 @@
     const power = powerEl.value.trim();
     const type = typeEl.value;
 
+    if (isLocked) return showFormError("Registrations are closed for this event.");
     if (!name) return showFormError("Enter your name.");
-    if (!selectedTeam) return showFormError("Choose Team A or Team B.");
+    if (!selectedTeam) return showFormError("Choose a team.");
     if (!power || parsePower(power) <= 0) return showFormError("Invalid troop power. Use formats like 54M or 1.2B.");
     if (!type) return showFormError("Choose a troop type.");
 
@@ -299,7 +351,7 @@
       document.getElementById("formSuccess").classList.remove("hidden");
       nameEl.value = ""; powerEl.value = ""; typeEl.value = "";
       selectedTeam = null;
-      document.querySelectorAll(".team-btn").forEach((b) => { b.className = "team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300"; });
+      document.querySelectorAll(".team-btn").forEach((b) => { b.className = "team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300 text-sm"; });
     } catch (e) {
       showFormError("Couldn't save — check your connection and try again.");
     }
@@ -342,6 +394,10 @@
     }
   });
 
+  document.getElementById("lockToggleBtn").addEventListener("click", async () => {
+    await db.ref(ROOT + "/locked").set(!isLocked);
+  });
+
   function startAdminSync() {
     rosterRef = db.ref(ROOT + "/players");
     rosterRef.on("value", (snap) => {
@@ -379,9 +435,11 @@
     const maxPower = sorted.length ? parsePower(sorted[0].power) : 1;
     const countA = players.filter((p) => p.team === "A").length;
     const countB = players.filter((p) => p.team === "B").length;
+    const countN = players.filter((p) => p.team === "N").length;
 
     document.getElementById("countA").textContent = countA;
     document.getElementById("countB").textContent = countB;
+    document.getElementById("countN").textContent = countN;
     document.getElementById("exportBtn").classList.toggle("hidden", players.length === 0);
 
     const tbody = document.getElementById("rosterTableBody");
@@ -390,12 +448,13 @@
       return;
     }
     tbody.innerHTML = filtered.map((p, i) => {
-      const badgeClass = p.team === "A" ? "bg-red-950/60 text-red-300" : "bg-blue-950/60 text-blue-300";
+      const badgeClass = p.team === "A" ? "bg-red-950/60 text-red-300" : p.team === "B" ? "bg-blue-950/60 text-blue-300" : "bg-purple-950/60 text-purple-300";
+      const badgeText = p.team === "A" ? "A" : p.team === "B" ? "B" : "A/B";
       return (
         '<tr class="border-b border-white/5">' +
           '<td class="py-2 pr-2 font-bold" style="color:#E8B923">' + (i + 1) + '</td>' +
           '<td class="py-2 pr-2 text-white font-medium">' + escapeHtml(p.name) + '</td>' +
-          '<td class="py-2 pr-2"><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + badgeClass + '">' + p.team + '</span></td>' +
+          '<td class="py-2 pr-2"><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + badgeClass + '">' + badgeText + '</span></td>' +
           '<td class="py-2 pr-2 text-gray-400">' + escapeHtml(p.type || "-") + '</td>' +
           '<td class="py-2 pr-2 text-white font-bold text-right">' + escapeHtml(p.power) + '</td>' +
           '<td class="py-2 text-right"><button class="remove-btn text-gray-600 hover:text-red-400" data-name="' + escapeHtml(p.name) + '">✕</button></td>' +
@@ -423,10 +482,7 @@
       manualTeam = btn.dataset.mteam;
       document.querySelectorAll(".mteam-btn").forEach((b) => {
         const active = b.dataset.mteam === manualTeam;
-        const isA = b.dataset.mteam === "A";
-        b.className = "mteam-btn py-2 rounded-lg text-sm border " + (active
-          ? (isA ? "bg-red-950/60 border-red-500 text-red-300" : "bg-blue-950/60 border-blue-400 text-blue-300")
-          : "bg-black/30 border-white/10 text-gray-300");
+        b.className = "mteam-btn py-2 rounded-lg text-xs border " + (active ? teamActiveClass(b.dataset.mteam) : "bg-black/30 border-white/10 text-gray-300");
       });
     });
   });
@@ -447,7 +503,7 @@
     document.getElementById("mPower").value = "";
     document.getElementById("mType").value = "";
     manualTeam = null;
-    document.querySelectorAll(".mteam-btn").forEach((b) => { b.className = "mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300"; });
+    document.querySelectorAll(".mteam-btn").forEach((b) => { b.className = "mteam-btn py-2 rounded-lg text-xs border bg-black/30 border-white/10 text-gray-300"; });
   });
 
   // week date
@@ -461,15 +517,27 @@
   // export excel
   document.getElementById("exportBtn").addEventListener("click", () => {
     const sorted = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
-    const rows = sorted.map((p, i) => ({ Rank: i + 1, Name: p.name, Team: p.team === "A" ? "Team A" : "Team B", "Troop Type": p.type || "", "Troop Power": p.power }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const headers = ["Rank", "Name", "Team", "Troop Type", "Troop Power"];
-    ws["!cols"] = headers.map((key) => {
-      const maxLen = Math.max(key.length, ...rows.map((r) => String(r[key] ?? "").length));
-      return { wch: maxLen + 2 };
-    });
+    const headers = ["Rank", "Name", "Troop Type", "Troop Power"];
+
+    function buildSheet(list) {
+      const rows = list.map((p, i) => ({ Rank: i + 1, Name: p.name, "Troop Type": p.type || "", "Troop Power": p.power }));
+      const ws = rows.length ? XLSX.utils.json_to_sheet(rows) : XLSX.utils.aoa_to_sheet([headers]);
+      ws["!cols"] = headers.map((key) => {
+        const maxLen = Math.max(key.length, ...rows.map((r) => String(r[key] ?? "").length), 1);
+        return { wch: maxLen + 2 };
+      });
+      return ws;
+    }
+
+    const teamA = sorted.filter((p) => p.team === "A");
+    const teamB = sorted.filter((p) => p.team === "B");
+    const teamN = sorted.filter((p) => p.team === "N");
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Ranking");
+    XLSX.utils.book_append_sheet(wb, buildSheet(teamA), "Team A");
+    XLSX.utils.book_append_sheet(wb, buildSheet(teamB), "Team B");
+    if (teamN.length) XLSX.utils.book_append_sheet(wb, buildSheet(teamN), "A or B");
+    XLSX.utils.book_append_sheet(wb, buildSheet(sorted), "All");
     XLSX.writeFile(wb, "desert-storm-" + (currentWeek || "ranking") + ".xlsx");
   });
 
