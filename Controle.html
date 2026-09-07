@@ -193,7 +193,6 @@
     border-radius:4px;
   }
   .cell-yes{color:var(--ok);}
-  .cell-no{color:var(--ember-glow);}
   .cell-blank{color:var(--steel-dim);}
   .row-flex{
     display:flex;
@@ -437,7 +436,7 @@
           <h2 style="margin:0;">Train history</h2>
           <button class="btn-primary btn-small" id="addTrainDateBtn">Add date</button>
         </div>
-        <div class="subtitle" style="margin-bottom:14px;">Click a cell to cycle: — → Went → Missed → —</div>
+        <div class="subtitle" style="margin-bottom:14px;">Click a cell to mark: — → Went → —</div>
         <div class="table-scroll">
           <table id="trainTable">
             <thead><tr id="trainHeadRow"><th>Player</th></tr></thead>
@@ -527,7 +526,7 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s; return 
 // ---------- Firebase listeners ----------
 db.ref(`${ROOT}/players`).on('value', snap => { players = snap.val() || {}; renderPlayers(); renderTrainTable(); renderParticipation(); });
 db.ref(`${ROOT}/events`).on('value', snap => { events = snap.val() || {}; renderEventsList(); renderEventSelect(); });
-db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderParticipation(); renderAdminPlayers(); });
+db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderParticipation(); renderAdminPlayers(); renderTrainTable(); });
 db.ref(`${ROOT}/trainDates`).on('value', snap => { trainDates = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/trainAttendance`).on('value', snap => { trainAttendance = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/suggestions`).on('value', snap => { suggestions = snap.val() || {}; renderSuggestions(); });
@@ -722,38 +721,39 @@ document.getElementById('addTrainDateBtn').addEventListener('click', () => {
   db.ref(`${ROOT}/trainDates`).push({ date: label });
 });
 
+function timesWent(pid){
+  return Object.keys(trainDates).filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'yes').length;
+}
+
 function renderTrainTable(){
   const head = document.getElementById('trainHeadRow');
   const body = document.getElementById('trainBody');
   const dateIds = Object.keys(trainDates).sort((a,b) => (trainDates[a].date||'').localeCompare(trainDates[b].date||''));
-  const playerIds = Object.keys(players);
+  const playerIds = Object.keys(players).sort((a,b) => pointsFor(b) - pointsFor(a));
 
-  head.innerHTML = '<th>Player</th>' + dateIds.map(id => `<th>${esc(trainDates[id].date)} <span style="cursor:pointer;color:var(--ember-glow);" onclick="deleteTrainDate('${id}')">✕</span></th>`).join('');
+  head.innerHTML = '<th>Player</th><th>Points</th><th>Times went</th>' + dateIds.map(id => `<th>${esc(trainDates[id].date)} <span style="cursor:pointer;color:var(--ember-glow);" onclick="deleteTrainDate('${id}')">✕</span></th>`).join('');
 
   if(playerIds.length === 0){
-    body.innerHTML = `<tr><td colspan="${dateIds.length+1}" class="empty-note">No players yet.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${dateIds.length+3}" class="empty-note">No players yet.</td></tr>`;
     return;
   }
   if(dateIds.length === 0){
-    body.innerHTML = playerIds.map(pid => `<tr><td>${esc(players[pid].name)}</td></tr>`).join('');
+    body.innerHTML = playerIds.map(pid => `<tr><td>${esc(players[pid].name)}</td><td>${pointsFor(pid)}</td><td>${timesWent(pid)}</td></tr>`).join('');
     return;
   }
   body.innerHTML = playerIds.map(pid => {
     const cells = dateIds.map(did => {
       const val = trainAttendance[did] && trainAttendance[did][pid];
-      let label = '—', cls = 'cell-blank';
-      if(val === 'yes'){ label = 'Went'; cls = 'cell-yes'; }
-      else if(val === 'no'){ label = 'Missed'; cls = 'cell-no'; }
-      return `<td class="cell-toggle ${cls}" onclick="cycleTrain('${did}','${pid}')">${label}</td>`;
+      const went = val === 'yes';
+      return `<td class="cell-toggle ${went ? 'cell-yes' : 'cell-blank'}" onclick="cycleTrain('${did}','${pid}')">${went ? 'Went' : '—'}</td>`;
     }).join('');
-    return `<tr><td>${esc(players[pid].name)}</td>${cells}</tr>`;
+    return `<tr><td>${esc(players[pid].name)}</td><td>${pointsFor(pid)}</td><td>${timesWent(pid)}</td>${cells}</tr>`;
   }).join('');
 }
 function cycleTrain(did, pid){
   const current = trainAttendance[did] && trainAttendance[did][pid];
-  const next = current === undefined ? 'yes' : (current === 'yes' ? 'no' : null);
-  if(next === null){ db.ref(`${ROOT}/trainAttendance/${did}/${pid}`).remove(); }
-  else { db.ref(`${ROOT}/trainAttendance/${did}/${pid}`).set(next); }
+  if(current === 'yes'){ db.ref(`${ROOT}/trainAttendance/${did}/${pid}`).remove(); }
+  else { db.ref(`${ROOT}/trainAttendance/${did}/${pid}`).set('yes'); }
 }
 function deleteTrainDate(id){
   if(!confirm('Remove this train date and its records?')) return;
@@ -778,15 +778,13 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   const summaryRows = playerIds.map((pid, idx) => {
     const p = players[pid];
     const wentCount = Object.keys(trainDates).filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'yes').length;
-    const missedCount = Object.keys(trainDates).filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'no').length;
     return {
       Rank: idx + 1,
       Name: p.name,
       'Squad Power': fmtPower(p.power),
       Type: p.type,
       Points: pointsFor(pid),
-      'Train Went': wentCount,
-      'Train Missed': missedCount
+      'Train Went': wentCount
     };
   });
   const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
@@ -813,7 +811,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   Object.keys(trainDates).forEach(did => {
     Object.keys(players).forEach(pid => {
       const val = trainAttendance[did] && trainAttendance[did][pid];
-      trainRows.push({ Date: trainDates[did].date, Player: players[pid].name, Status: val === 'yes' ? 'Went' : (val === 'no' ? 'Missed' : '') });
+      trainRows.push({ Date: trainDates[did].date, Player: players[pid].name, Status: val === 'yes' ? 'Went' : '' });
     });
   });
   const wsTrain = XLSX.utils.json_to_sheet(trainRows);
