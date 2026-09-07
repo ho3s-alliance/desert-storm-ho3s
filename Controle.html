@@ -552,7 +552,7 @@ function renderAdminPlayers(){
   const body = document.getElementById('adminPlayersBody');
   const ids = Object.keys(players);
   if(ids.length === 0){ body.innerHTML = '<tr><td colspan="5" class="empty-note">No players yet.</td></tr>'; return; }
-  const sorted = ids.slice().sort((a,b) => pointsFor(b) - pointsFor(a));
+  const sorted = ids.slice().sort((a,b) => players[b].power - players[a].power);
   body.innerHTML = sorted.map(id => {
     const p = players[id];
     return `<tr><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
@@ -791,7 +791,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   autoWidth(wsSummary, summaryRows);
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  const playersRows = Object.values(players).map(p => ({ Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
+  const playersRows = Object.values(players).sort((a,b) => b.power - a.power).map(p => ({ Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
   const wsPlayers = XLSX.utils.json_to_sheet(playersRows);
   autoWidth(wsPlayers, playersRows);
   XLSX.utils.book_append_sheet(wb, wsPlayers, 'Players');
