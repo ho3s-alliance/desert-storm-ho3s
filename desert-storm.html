@@ -7,21 +7,169 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-<!-- Firebase (compat SDK, works with plain <script> tags, no build step) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
-  html,body{margin:0;padding:0;background:#0a0a0b;}
+  html,body{margin:0;padding:0;background:#0a0a0b;font-family:'Inter',sans-serif;}
   .font-display{font-family:'Cinzel',serif;}
-  .font-body{font-family:'Inter',sans-serif;}
+  input,select,textarea{font-family:inherit;}
+  ::placeholder{color:#6b7280;}
+  .hidden{display:none !important;}
 </style>
 </head>
 <body>
-<div id="root"></div>
+
+<div class="min-h-screen w-full" style="background:linear-gradient(180deg,#0a0a0b 0%,#0e0d10 100%)">
+  <div class="max-w-md mx-auto px-4 py-10">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="flex justify-center mb-3">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <path d="M28 8 L20 40 L28 34 L36 40 Z" stroke="#D8D2C4" stroke-width="1.4" stroke-linejoin="round" />
+          <circle cx="28" cy="8" r="2.3" fill="#ef4444" />
+          <circle cx="20" cy="40" r="2.1" fill="#3b82f6" />
+          <circle cx="36" cy="40" r="2.1" fill="#E8B923" />
+        </svg>
+      </div>
+      <h1 class="font-display text-3xl tracking-wide" style="color:#EDE7D9">
+        DESERT <span style="color:#E8B923">STORM</span>
+      </h1>
+      <div class="h-px mt-5 mx-auto w-40" style="background:linear-gradient(90deg,#3b82f6,#E8B923,#ef4444)"></div>
+      <div class="mt-4 flex items-center justify-center gap-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">Ho3s Alliance</span>
+        <span id="connBadge" class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-gray-500">● checking...</span>
+      </div>
+    </div>
+
+    <!-- Registration form -->
+    <div class="rounded-2xl p-6 mb-6 border border-white/10" style="background:#141316">
+      <div class="flex items-center gap-2 mb-5">
+        <span style="color:#ef4444">◆</span>
+        <h2 class="font-display text-lg" style="color:#EDE7D9">Register your entry</h2>
+      </div>
+
+      <label class="block text-sm text-gray-400 mb-2">Player name</label>
+      <input id="fName" placeholder="Your in-game name"
+        class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 outline-none focus:border-yellow-500/60" />
+
+      <label class="block text-sm text-gray-400 mb-2">Team</label>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <button type="button" data-team="A" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300">Team A</button>
+        <button type="button" data-team="B" class="team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300">Team B</button>
+      </div>
+
+      <label class="block text-sm text-gray-400 mb-2">Troop power</label>
+      <input id="fPower" placeholder="e.g. 54M or 1.2B"
+        class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 outline-none focus:border-yellow-500/60" />
+
+      <label class="block text-sm text-gray-400 mb-2">Troop type</label>
+      <select id="fType" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 outline-none focus:border-yellow-500/60">
+        <option value="" disabled selected>Select type</option>
+        <option value="Aircraft">Aircraft</option>
+        <option value="Tanks">Tanks</option>
+        <option value="Missiles">Missiles</option>
+      </select>
+
+      <p id="formError" class="text-red-400 text-sm mb-3 hidden"></p>
+      <p id="formSuccess" class="text-green-400 text-sm mb-3 hidden">✓ Registered! You can submit again anytime to update your entry.</p>
+
+      <button id="registerBtn" class="w-full py-3 rounded-xl font-semibold text-white" style="background:linear-gradient(90deg,#ef4444,#a855f7)">
+        Register
+      </button>
+    </div>
+
+    <!-- Admin area -->
+    <div class="text-center">
+      <button id="openAdminBtn" class="text-xs text-gray-600 hover:text-gray-400 mx-auto">🛡 Admin area</button>
+
+      <div id="adminPanel" class="hidden rounded-2xl p-5 border border-white/10 text-left" style="background:#141316">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-widest text-gray-400">🛡 Admin</span>
+          <button id="closeAdminBtn" class="text-gray-500">✕</button>
+        </div>
+
+        <div id="pinGate">
+          <div class="flex gap-2">
+            <input id="pinInput" type="password" placeholder="PIN"
+              class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
+            <button id="pinBtn" class="px-4 rounded-lg font-semibold text-black" style="background:#E8B923">🔒 Log in</button>
+          </div>
+          <p id="pinError" class="text-red-400 text-xs mt-2 hidden">Incorrect PIN.</p>
+        </div>
+
+        <div id="adminContent" class="hidden space-y-5">
+          <div>
+            <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Week date</label>
+            <div class="flex gap-2">
+              <input id="weekDate" type="date" class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
+              <button id="saveWeekBtn" class="px-4 rounded-lg font-semibold text-black" style="background:#E8B923">Save</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Add manually</label>
+            <input id="mName" placeholder="Name" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60" />
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <button type="button" data-mteam="A" class="mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300">Team A</button>
+              <button type="button" data-mteam="B" class="mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300">Team B</button>
+            </div>
+            <select id="mType" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60">
+              <option value="" disabled selected>Select type</option>
+              <option value="Aircraft">Aircraft</option>
+              <option value="Tanks">Tanks</option>
+              <option value="Missiles">Missiles</option>
+            </select>
+            <div class="flex gap-2">
+              <input id="mPower" placeholder="e.g. 54M" class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-yellow-500/60" />
+              <button id="mAddBtn" class="px-4 rounded-lg font-semibold text-black" style="background:#E8B923">Add</button>
+            </div>
+            <p id="mError" class="text-red-400 text-xs mt-1 hidden"></p>
+          </div>
+
+          <div class="pt-2 border-t border-white/10">
+            <div class="flex items-center justify-between mb-3 mt-4">
+              <h3 class="font-display text-sm" style="color:#EDE7D9">Roster &amp; ranking</h3>
+              <button id="exportBtn" class="text-gray-400 hidden">⬇</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <div class="rounded-lg border border-red-500/50 bg-red-950/20 py-2 text-center">
+                <p class="text-[10px] uppercase tracking-widest text-red-300/80">Team A</p>
+                <p id="countA" class="text-lg font-bold text-white">0</p>
+              </div>
+              <div class="rounded-lg border border-blue-400/50 bg-blue-950/20 py-2 text-center">
+                <p class="text-[10px] uppercase tracking-widest text-blue-300/80">Team B</p>
+                <p id="countB" class="text-lg font-bold text-white">0</p>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mb-3">
+              <button data-filter="all" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border bg-white/10 border-white/30 text-white">All</button>
+              <button data-filter="A" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">Team A</button>
+              <button data-filter="B" class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-gray-400">Team B</button>
+            </div>
+
+            <div id="rosterList" class="space-y-2"></div>
+          </div>
+
+          <div id="resetSection">
+            <button id="resetBtn" class="w-full py-3 rounded-xl font-bold border border-red-500/60 text-red-400 bg-red-950/20">
+              Reset for next week
+            </button>
+          </div>
+
+          <div>
+            <button id="historyToggle" class="text-xs text-gray-400 underline">View week history</button>
+            <div id="historyList" class="mt-2 space-y-1 hidden"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
   // Your Ho3s Alliance Firebase project — same one used by the other apps.
@@ -39,439 +187,330 @@
   // Everything for this tool lives under this root node, so it doesn't
   // collide with data from your other apps (mapa, briefing, transfer-1236, etc).
   const ROOT = "troopRegistration";
-</script>
+  const ADMIN_PIN = "2026";
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useCallback, useRef } = React;
+  function slugify(name) {
+    const base = name.trim().toLowerCase().normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    return base || ("p-" + Date.now());
+  }
+  function parsePower(raw) {
+    if (!raw) return 0;
+    let s = String(raw).trim().toUpperCase().replace(",", ".");
+    let mult = 1;
+    const last = s.slice(-1);
+    if (last === "K") { mult = 1e3; s = s.slice(0, -1); }
+    else if (last === "M") { mult = 1e6; s = s.slice(0, -1); }
+    else if (last === "B") { mult = 1e9; s = s.slice(0, -1); }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n * mult;
+  }
+  function formatDate(iso) {
+    if (!iso) return "";
+    const parts = iso.split("-");
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+  function currentMonday() {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
 
-const ADMIN_PIN = "2026";
-const GOLD = "#E8B923";
-const TROOP_TYPES = ["Aircraft", "Tanks", "Missiles"];
+  // --- connection badge ---
+  db.ref(".info/connected").on("value", (snap) => {
+    const el = document.getElementById("connBadge");
+    if (snap.val()) { el.textContent = "🟢 Live"; el.className = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-green-400"; }
+    else { el.textContent = "🔴 Offline"; el.className = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-red-400"; }
+  });
 
-function slugify(name) {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return base || `p-${Date.now()}`;
-}
-
-function parsePower(raw) {
-  if (!raw) return 0;
-  let s = String(raw).trim().toUpperCase().replace(",", ".");
-  let mult = 1;
-  const last = s.slice(-1);
-  if (last === "K") { mult = 1e3; s = s.slice(0, -1); }
-  else if (last === "M") { mult = 1e6; s = s.slice(0, -1); }
-  else if (last === "B") { mult = 1e9; s = s.slice(0, -1); }
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n * mult;
-}
-
-function formatDate(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-function currentMonday() {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
-}
-
-// --- Firebase helpers ---
-async function fbSet(path, value) { try { await db.ref(path).set(value); return true; } catch { return false; } }
-async function fbGet(path) { try { const s = await db.ref(path).once("value"); return s.exists() ? s.val() : null; } catch { return null; } }
-async function fbRemove(path) { try { await db.ref(path).remove(); return true; } catch { return false; } }
-
-// --- tiny inline icons ---
-const Icon = ({ children, size = 14, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-    strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-);
-const IconShield = (p) => <Icon {...p}><path d="M12 2 20 6v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></Icon>;
-const IconLock = (p) => <Icon {...p}><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></Icon>;
-const IconX = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="M6 6l12 12"/></Icon>;
-const IconCheck = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5"/></Icon>;
-const IconDownload = (p) => <Icon {...p}><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></Icon>;
-const IconWifi = (p) => <Icon {...p}><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.5 16.13a6 6 0 0 1 7 0"/><path d="M2 8.82a16 16 0 0 1 20 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></Icon>;
-
-function Mark() {
-  return (
-    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-      <path d="M28 8 L20 40 L28 34 L36 40 Z" stroke="#D8D2C4" strokeWidth="1.4" strokeLinejoin="round" />
-      <circle cx="28" cy="8" r="2.3" fill="#ef4444" />
-      <circle cx="20" cy="40" r="2.1" fill="#3b82f6" />
-      <circle cx="36" cy="40" r="2.1" fill={GOLD} />
-    </svg>
-  );
-}
-
-function DesertStorm() {
-  const [connected, setConnected] = useState(true);
-
-  useEffect(() => {
-    const ref = db.ref(".info/connected");
-    const cb = ref.on("value", (snap) => setConnected(!!snap.val()));
-    return () => ref.off("value", cb);
-  }, []);
-
-  // --- Player-facing form (writes straight to Firebase, live for everyone) ---
-  const [name, setName] = useState("");
-  const [team, setTeam] = useState(null);
-  const [power, setPower] = useState("");
-  const [troopType, setTroopType] = useState("");
-  const [formError, setFormError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [justRegistered, setJustRegistered] = useState(false);
-
-  const handleRegister = async () => {
-    setFormError("");
-    if (!name.trim()) { setFormError("Enter your name."); return; }
-    if (!team) { setFormError("Choose Team A or Team B."); return; }
-    if (!power.trim() || parsePower(power) <= 0) {
-      setFormError("Invalid troop power. Use formats like 54M or 1.2B.");
-      return;
-    }
-    if (!troopType) { setFormError("Choose a troop type."); return; }
-    setSubmitting(true);
-    const record = { name: name.trim(), team, power: power.trim(), type: troopType, ts: Date.now() };
-    const ok = await fbSet(`${ROOT}/players/${slugify(name)}`, record);
-    setSubmitting(false);
-    if (!ok) { setFormError("Couldn't save — check your connection and try again."); return; }
-    setJustRegistered(true);
-    setName(""); setTeam(null); setPower(""); setTroopType("");
-    setTimeout(() => setJustRegistered(false), 3500);
-  };
-
-  // --- Admin area ---
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [adminAuthed, setAdminAuthed] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState("");
-
-  const [players, setPlayers] = useState([]);
-  const [filter, setFilter] = useState("all");
-  const [week, setWeek] = useState("");
-  const [dateDraft, setDateDraft] = useState("");
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
-  const [manualName, setManualName] = useState("");
-  const [manualTeam, setManualTeam] = useState(null);
-  const [manualPower, setManualPower] = useState("");
-  const [manualType, setManualType] = useState("");
-  const [manualError, setManualError] = useState("");
-
-  // Live-sync the roster only once the admin is authenticated (kept admin-only, as requested).
-  useEffect(() => {
-    if (!adminAuthed) return;
-    const ref = db.ref(`${ROOT}/players`);
-    const cb = ref.on("value", (snap) => {
-      const val = snap.val() || {};
-      setPlayers(Object.values(val));
+  // --- registration form ---
+  let selectedTeam = null;
+  document.querySelectorAll(".team-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedTeam = btn.dataset.team;
+      document.querySelectorAll(".team-btn").forEach((b) => {
+        const active = b.dataset.team === selectedTeam;
+        const isA = b.dataset.team === "A";
+        b.className = "team-btn py-3 rounded-xl font-medium border " + (active
+          ? (isA ? "bg-red-950/60 border-red-500 text-red-300" : "bg-blue-950/60 border-blue-400 text-blue-300")
+          : "bg-black/30 border-white/10 text-gray-300");
+      });
     });
-    return () => ref.off("value", cb);
-  }, [adminAuthed]);
+  });
 
-  useEffect(() => {
-    if (!adminAuthed) return;
-    (async () => {
-      const w = await fbGet(`${ROOT}/week`);
-      if (w && w.date) { setWeek(w.date); setDateDraft(w.date); }
+  function showFormError(msg) {
+    const el = document.getElementById("formError");
+    el.textContent = msg; el.classList.remove("hidden");
+    document.getElementById("formSuccess").classList.add("hidden");
+  }
+
+  document.getElementById("registerBtn").addEventListener("click", async () => {
+    const nameEl = document.getElementById("fName");
+    const powerEl = document.getElementById("fPower");
+    const typeEl = document.getElementById("fType");
+    document.getElementById("formError").classList.add("hidden");
+    document.getElementById("formSuccess").classList.add("hidden");
+
+    const name = nameEl.value.trim();
+    const power = powerEl.value.trim();
+    const type = typeEl.value;
+
+    if (!name) return showFormError("Enter your name.");
+    if (!selectedTeam) return showFormError("Choose Team A or Team B.");
+    if (!power || parsePower(power) <= 0) return showFormError("Invalid troop power. Use formats like 54M or 1.2B.");
+    if (!type) return showFormError("Choose a troop type.");
+
+    const btn = document.getElementById("registerBtn");
+    btn.disabled = true; btn.textContent = "Saving...";
+    try {
+      await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: selectedTeam, power, type, ts: Date.now() });
+      document.getElementById("formSuccess").classList.remove("hidden");
+      nameEl.value = ""; powerEl.value = ""; typeEl.value = "";
+      selectedTeam = null;
+      document.querySelectorAll(".team-btn").forEach((b) => { b.className = "team-btn py-3 rounded-xl font-medium border bg-black/30 border-white/10 text-gray-300"; });
+    } catch (e) {
+      showFormError("Couldn't save — check your connection and try again.");
+    }
+    btn.disabled = false; btn.textContent = "Register";
+  });
+
+  // --- admin area ---
+  document.getElementById("openAdminBtn").addEventListener("click", () => {
+    document.getElementById("openAdminBtn").classList.add("hidden");
+    document.getElementById("adminPanel").classList.remove("hidden");
+  });
+  document.getElementById("closeAdminBtn").addEventListener("click", () => {
+    document.getElementById("adminPanel").classList.add("hidden");
+    document.getElementById("openAdminBtn").classList.remove("hidden");
+    document.getElementById("adminContent").classList.add("hidden");
+    document.getElementById("pinGate").classList.remove("hidden");
+    document.getElementById("pinInput").value = "";
+    if (rosterRef) { rosterRef.off(); rosterRef = null; }
+  });
+
+  let rosterRef = null;
+  let players = [];
+  let currentFilter = "all";
+  let currentWeek = "";
+
+  document.getElementById("pinBtn").addEventListener("click", () => {
+    const val = document.getElementById("pinInput").value;
+    if (val === ADMIN_PIN) {
+      document.getElementById("pinGate").classList.add("hidden");
+      document.getElementById("adminContent").classList.remove("hidden");
+      document.getElementById("pinError").classList.add("hidden");
+      startAdminSync();
+    } else {
+      document.getElementById("pinError").classList.remove("hidden");
+    }
+  });
+
+  function startAdminSync() {
+    rosterRef = db.ref(ROOT + "/players");
+    rosterRef.on("value", (snap) => {
+      const val = snap.val() || {};
+      players = Object.values(val);
+      renderRoster();
+    });
+
+    db.ref(ROOT + "/week").once("value").then((snap) => {
+      const w = snap.val();
+      if (w && w.date) { currentWeek = w.date; document.getElementById("weekDate").value = w.date; }
       else {
         const today = currentMonday();
-        setWeek(today); setDateDraft(today);
-        await fbSet(`${ROOT}/week`, { date: today });
+        currentWeek = today;
+        document.getElementById("weekDate").value = today;
+        db.ref(ROOT + "/week").set({ date: today });
       }
-    })();
-  }, [adminAuthed]);
+    });
+  }
 
-  const checkPin = () => {
-    if (pinInput === ADMIN_PIN) { setAdminAuthed(true); setPinError(""); }
-    else setPinError("Incorrect PIN.");
-  };
+  document.querySelectorAll(".filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach((b) => {
+        const active = b.dataset.filter === currentFilter;
+        b.className = "filter-btn px-3 py-1 rounded-full text-xs font-medium border " + (active ? "bg-white/10 border-white/30 text-white" : "border-white/10 text-gray-400");
+      });
+      renderRoster();
+    });
+  });
 
-  const addManual = async () => {
-    setManualError("");
-    if (!manualName.trim() || !manualTeam || !manualPower.trim() || parsePower(manualPower) <= 0 || !manualType) {
-      setManualError("Fill in name, team, troop type and a valid power.");
+  function renderRoster() {
+    const sorted = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
+    const filtered = sorted.filter((p) => currentFilter === "all" || p.team === currentFilter);
+    const maxPower = sorted.length ? parsePower(sorted[0].power) : 1;
+    const countA = players.filter((p) => p.team === "A").length;
+    const countB = players.filter((p) => p.team === "B").length;
+
+    document.getElementById("countA").textContent = countA;
+    document.getElementById("countB").textContent = countB;
+    document.getElementById("exportBtn").classList.toggle("hidden", players.length === 0);
+
+    const list = document.getElementById("rosterList");
+    if (filtered.length === 0) {
+      list.innerHTML = '<p class="text-center text-gray-500 text-xs py-4">No players registered yet.</p>';
       return;
     }
-    const rec = { name: manualName.trim(), team: manualTeam, power: manualPower.trim(), type: manualType, ts: Date.now() };
-    await fbSet(`${ROOT}/players/${slugify(rec.name)}`, rec);
-    setManualName(""); setManualTeam(null); setManualPower(""); setManualType("");
-  };
+    list.innerHTML = filtered.map((p, i) => {
+      const pct = Math.max(4, (parsePower(p.power) / maxPower) * 100);
+      const barColor = p.team === "A" ? "#ef4444" : "#3b82f6";
+      const badgeClass = p.team === "A" ? "bg-red-950/60 text-red-300" : "bg-blue-950/60 text-blue-300";
+      return (
+        '<div class="flex items-center gap-2">' +
+          '<span class="w-4 text-right text-xs font-bold" style="color:#E8B923">' + (i + 1) + '</span>' +
+          '<div class="flex-1 min-w-0">' +
+            '<p class="text-white text-sm font-medium truncate">' + escapeHtml(p.name) + '</p>' +
+            '<div class="h-1 rounded-full bg-white/10 mt-1 overflow-hidden">' +
+              '<div class="h-full rounded-full" style="width:' + pct + '%;background:' + barColor + '"></div>' +
+            '</div>' +
+          '</div>' +
+          '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + badgeClass + '">' + p.team + '</span>' +
+          (p.type ? '<span class="text-[9px] text-gray-500 w-14 text-right hidden sm:inline">' + escapeHtml(p.type) + '</span>' : '') +
+          '<span class="text-white text-xs font-bold w-12 text-right">' + escapeHtml(p.power) + '</span>' +
+          '<button class="remove-btn text-gray-600 hover:text-red-400" data-name="' + escapeHtml(p.name) + '">✕</button>' +
+        '</div>'
+      );
+    }).join("");
 
-  const removePlayer = async (p) => {
-    await fbRemove(`${ROOT}/players/${slugify(p.name)}`);
-  };
+    list.querySelectorAll(".remove-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await db.ref(ROOT + "/players/" + slugify(btn.dataset.name)).remove();
+      });
+    });
+  }
 
-  const saveDate = async () => {
-    if (!dateDraft) return;
-    await fbSet(`${ROOT}/week`, { date: dateDraft });
-    setWeek(dateDraft);
-  };
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
 
-  const loadHistory = async () => {
-    const idx = (await fbGet(`${ROOT}/archiveIndex`)) || [];
-    const entries = await Promise.all(idx.map(async (d) => {
-      const a = await fbGet(`${ROOT}/archive/${d}`);
-      return a ? { date: d, count: Object.keys(a.players || {}).length } : null;
-    }));
-    setHistory(entries.filter(Boolean).sort((a, b) => (a.date < b.date ? 1 : -1)));
-  };
+  // manual add
+  let manualTeam = null;
+  document.querySelectorAll(".mteam-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      manualTeam = btn.dataset.mteam;
+      document.querySelectorAll(".mteam-btn").forEach((b) => {
+        const active = b.dataset.mteam === manualTeam;
+        const isA = b.dataset.mteam === "A";
+        b.className = "mteam-btn py-2 rounded-lg text-sm border " + (active
+          ? (isA ? "bg-red-950/60 border-red-500 text-red-300" : "bg-blue-950/60 border-blue-400 text-blue-300")
+          : "bg-black/30 border-white/10 text-gray-300");
+      });
+    });
+  });
 
-  const doReset = async () => {
-    setResetting(true);
-    if (players.length > 0) {
-      const idx = (await fbGet(`${ROOT}/archiveIndex`)) || [];
-      if (!idx.includes(week)) idx.push(week);
-      await fbSet(`${ROOT}/archiveIndex`, idx);
-      const playersObj = {};
-      players.forEach((p) => { playersObj[slugify(p.name)] = p; });
-      await fbSet(`${ROOT}/archive/${week}`, { date: week, players: playersObj });
+  document.getElementById("mAddBtn").addEventListener("click", async () => {
+    const name = document.getElementById("mName").value.trim();
+    const power = document.getElementById("mPower").value.trim();
+    const type = document.getElementById("mType").value;
+    const errEl = document.getElementById("mError");
+    if (!name || !manualTeam || !power || parsePower(power) <= 0 || !type) {
+      errEl.textContent = "Fill in name, team, troop type and a valid power.";
+      errEl.classList.remove("hidden");
+      return;
     }
-    await fbRemove(`${ROOT}/players`);
-    const today = currentMonday();
-    await fbSet(`${ROOT}/week`, { date: today });
-    setWeek(today);
-    setDateDraft(today);
-    setResetting(false);
-    setConfirmReset(false);
-  };
+    errEl.classList.add("hidden");
+    await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: manualTeam, power, type, ts: Date.now() });
+    document.getElementById("mName").value = "";
+    document.getElementById("mPower").value = "";
+    document.getElementById("mType").value = "";
+    manualTeam = null;
+    document.querySelectorAll(".mteam-btn").forEach((b) => { b.className = "mteam-btn py-2 rounded-lg text-sm border bg-black/30 border-white/10 text-gray-300"; });
+  });
 
-  const exportExcel = () => {
-    const sortedRows = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
-    const rows = sortedRows.map((p, i) => ({ Rank: i + 1, Name: p.name, Team: p.team === "A" ? "Team A" : "Team B", "Troop Type": p.type || "", "Troop Power": p.power }));
+  // week date
+  document.getElementById("saveWeekBtn").addEventListener("click", async () => {
+    const val = document.getElementById("weekDate").value;
+    if (!val) return;
+    await db.ref(ROOT + "/week").set({ date: val });
+    currentWeek = val;
+  });
+
+  // export excel
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const sorted = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
+    const rows = sorted.map((p, i) => ({ Rank: i + 1, Name: p.name, Team: p.team === "A" ? "Team A" : "Team B", "Troop Type": p.type || "", "Troop Power": p.power }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Ranking");
-    XLSX.writeFile(wb, `desert-storm-${week || "ranking"}.xlsx`);
-  };
+    XLSX.writeFile(wb, "desert-storm-" + (currentWeek || "ranking") + ".xlsx");
+  });
 
-  const sorted = [...players].sort((a, b) => parsePower(b.power) - parsePower(a.power));
-  const filtered = sorted.filter((p) => filter === "all" || p.team === filter);
-  const maxPower = sorted.length ? parsePower(sorted[0].power) : 1;
-  const countA = players.filter((p) => p.team === "A").length;
-  const countB = players.filter((p) => p.team === "B").length;
+  // reset
+  function attachResetButtonListener() {
+    const btn = document.getElementById("resetBtn");
+    if (btn) btn.addEventListener("click", showResetConfirm);
+  }
 
-  return (
-    <div className="min-h-screen w-full" style={{ background: "linear-gradient(180deg,#0a0a0b 0%,#0e0d10 100%)" }}>
-      <div className="max-w-md mx-auto px-4 py-10 font-body">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-3"><Mark /></div>
-          <h1 className="font-display text-3xl tracking-wide" style={{ color: "#EDE7D9" }}>
-            DESERT <span style={{ color: GOLD }}>STORM</span>
-          </h1>
-          <div className="h-px mt-5 mx-auto w-40" style={{ background: "linear-gradient(90deg,#3b82f6,#E8B923,#ef4444)" }} />
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">
-              Ho3s Alliance
-            </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] ${connected ? "text-green-400" : "text-red-400"}`}>
-              <IconWifi size={10} /> {connected ? "Live" : "Offline"}
-            </span>
-          </div>
-        </div>
+  function showResetConfirm() {
+    const section = document.getElementById("resetSection");
+    section.innerHTML =
+      '<div class="rounded-xl border border-red-500/60 bg-red-950/30 p-4">' +
+        '<p class="text-sm text-red-200 mb-3">This will archive the current roster (' + players.length + ' players) and clear all entries for everyone. Confirm?</p>' +
+        '<div class="flex gap-2">' +
+          '<button id="confirmResetBtn" class="flex-1 py-2 rounded-lg font-bold text-black" style="background:#E8B923">Confirm reset</button>' +
+          '<button id="cancelResetBtn" class="flex-1 py-2 rounded-lg font-medium border border-white/20 text-gray-300">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.getElementById("cancelResetBtn").addEventListener("click", restoreResetButton);
+    document.getElementById("confirmResetBtn").addEventListener("click", doReset);
+  }
 
-        <div className="rounded-2xl p-6 mb-6 border border-white/10" style={{ background: "#141316" }}>
-          <div className="flex items-center gap-2 mb-5">
-            <span style={{ color: "#ef4444" }}>◆</span>
-            <h2 className="font-display text-lg" style={{ color: "#EDE7D9" }}>Register your entry</h2>
-          </div>
+  function restoreResetButton() {
+    const section = document.getElementById("resetSection");
+    section.innerHTML = '<button id="resetBtn" class="w-full py-3 rounded-xl font-bold border border-red-500/60 text-red-400 bg-red-950/20">Reset for next week</button>';
+    attachResetButtonListener();
+  }
 
-          <label className="block text-sm text-gray-400 mb-2">Player name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your in-game name"
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 mb-4 outline-none focus:border-yellow-500/60" />
+  async function doReset() {
+    const btn = document.getElementById("confirmResetBtn");
+    btn.disabled = true; btn.textContent = "Resetting...";
+    if (players.length > 0) {
+      const idxSnap = await db.ref(ROOT + "/archiveIndex").once("value");
+      const idx = idxSnap.val() || [];
+      if (!idx.includes(currentWeek)) idx.push(currentWeek);
+      await db.ref(ROOT + "/archiveIndex").set(idx);
+      const playersObj = {};
+      players.forEach((p) => { playersObj[slugify(p.name)] = p; });
+      await db.ref(ROOT + "/archive/" + currentWeek).set({ date: currentWeek, players: playersObj });
+    }
+    await db.ref(ROOT + "/players").remove();
+    const today = currentMonday();
+    await db.ref(ROOT + "/week").set({ date: today });
+    currentWeek = today;
+    document.getElementById("weekDate").value = today;
+    restoreResetButton();
+  }
 
-          <label className="block text-sm text-gray-400 mb-2">Team</label>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <button onClick={() => setTeam("A")} className={`py-3 rounded-xl font-medium border transition ${team === "A" ? "bg-red-950/60 border-red-500 text-red-300" : "bg-black/30 border-white/10 text-gray-300"}`}>Team A</button>
-            <button onClick={() => setTeam("B")} className={`py-3 rounded-xl font-medium border transition ${team === "B" ? "bg-blue-950/60 border-blue-400 text-blue-300" : "bg-black/30 border-white/10 text-gray-300"}`}>Team B</button>
-          </div>
+  attachResetButtonListener();
 
-          <label className="block text-sm text-gray-400 mb-2">Troop power</label>
-          <input value={power} onChange={(e) => setPower(e.target.value)} placeholder="e.g. 54M or 1.2B"
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 mb-4 outline-none focus:border-yellow-500/60" />
-
-          <label className="block text-sm text-gray-400 mb-2">Troop type</label>
-          <select value={troopType} onChange={(e) => setTroopType(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 outline-none focus:border-yellow-500/60">
-            <option value="" disabled>Select type</option>
-            {TROOP_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
-          </select>
-
-          {formError && <p className="text-red-400 text-sm mb-3">{formError}</p>}
-          {justRegistered && (
-            <p className="text-green-400 text-sm mb-3 flex items-center gap-1">
-              <IconCheck size={14} /> Registered! You can submit again anytime to update your entry.
-            </p>
-          )}
-
-          <button onClick={handleRegister} disabled={submitting} className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-60"
-            style={{ background: "linear-gradient(90deg,#ef4444,#a855f7)" }}>
-            {submitting ? "Saving..." : "Register"}
-          </button>
-        </div>
-
-        <div className="text-center">
-          {!adminOpen ? (
-            <button onClick={() => setAdminOpen(true)} className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1 mx-auto">
-              <IconShield size={12} /> Admin area
-            </button>
-          ) : (
-            <div className="rounded-2xl p-5 border border-white/10 text-left" style={{ background: "#141316" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><IconShield size={12} /> Admin</span>
-                <button onClick={() => { setAdminOpen(false); setAdminAuthed(false); setPinInput(""); }}><IconX size={16} className="text-gray-500" /></button>
-              </div>
-
-              {!adminAuthed ? (
-                <div>
-                  <div className="flex gap-2">
-                    <input type="password" value={pinInput} onChange={(e) => setPinInput(e.target.value)} placeholder="PIN"
-                      className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
-                    <button onClick={checkPin} className="px-4 rounded-lg font-semibold text-black flex items-center gap-1" style={{ background: GOLD }}>
-                      <IconLock size={14} /> Log in
-                    </button>
-                  </div>
-                  {pinError && <p className="text-red-400 text-xs mt-2">{pinError}</p>}
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Week date</label>
-                    <div className="flex gap-2">
-                      <input type="date" value={dateDraft} onChange={(e) => setDateDraft(e.target.value)}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
-                      <button onClick={saveDate} className="px-4 rounded-lg font-semibold text-black" style={{ background: GOLD }}>Save</button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Add manually</label>
-                    <input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Name"
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60" />
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <button onClick={() => setManualTeam("A")} className={`py-2 rounded-lg text-sm border ${manualTeam === "A" ? "bg-red-950/60 border-red-500 text-red-300" : "bg-black/30 border-white/10 text-gray-300"}`}>Team A</button>
-                      <button onClick={() => setManualTeam("B")} className={`py-2 rounded-lg text-sm border ${manualTeam === "B" ? "bg-blue-950/60 border-blue-400 text-blue-300" : "bg-black/30 border-white/10 text-gray-300"}`}>Team B</button>
-                    </div>
-                    <select value={manualType} onChange={(e) => setManualType(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2 outline-none focus:border-yellow-500/60">
-                      <option value="" disabled>Select type</option>
-                      {TROOP_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
-                    </select>
-                    <div className="flex gap-2">
-                      <input value={manualPower} onChange={(e) => setManualPower(e.target.value)} placeholder="e.g. 54M"
-                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-yellow-500/60" />
-                      <button onClick={addManual} className="px-4 rounded-lg font-semibold text-black" style={{ background: GOLD }}>Add</button>
-                    </div>
-                    {manualError && <p className="text-red-400 text-xs mt-1">{manualError}</p>}
-                  </div>
-
-                  <div className="pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between mb-3 mt-4">
-                      <h3 className="font-display text-sm" style={{ color: "#EDE7D9" }}>Roster &amp; ranking</h3>
-                      {players.length > 0 && <button onClick={exportExcel}><IconDownload size={14} className="text-gray-400" /></button>}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="rounded-lg border border-red-500/50 bg-red-950/20 py-2 text-center">
-                        <p className="text-[10px] uppercase tracking-widest text-red-300/80">Team A</p>
-                        <p className="text-lg font-bold text-white">{countA}</p>
-                      </div>
-                      <div className="rounded-lg border border-blue-400/50 bg-blue-950/20 py-2 text-center">
-                        <p className="text-[10px] uppercase tracking-widest text-blue-300/80">Team B</p>
-                        <p className="text-lg font-bold text-white">{countB}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mb-3">
-                      {[{ key: "all", label: "All" }, { key: "A", label: "Team A" }, { key: "B", label: "Team B" }].map((f) => (
-                        <button key={f.key} onClick={() => setFilter(f.key)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${filter === f.key ? "bg-white/10 border-white/30 text-white" : "border-white/10 text-gray-400"}`}>
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {filtered.length === 0 ? (
-                      <p className="text-center text-gray-500 text-xs py-4">No players registered yet.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {filtered.map((p, i) => {
-                          const pct = Math.max(4, (parsePower(p.power) / maxPower) * 100);
-                          const barColor = p.team === "A" ? "#ef4444" : "#3b82f6";
-                          return (
-                            <div key={p.name + i} className="flex items-center gap-2">
-                              <span className="w-4 text-right text-xs font-bold" style={{ color: GOLD }}>{i + 1}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-medium truncate">{p.name}</p>
-                                <div className="h-1 rounded-full bg-white/10 mt-1 overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barColor }} />
-                                </div>
-                              </div>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${p.team === "A" ? "bg-red-950/60 text-red-300" : "bg-blue-950/60 text-blue-300"}`}>{p.team}</span>
-                              {p.type && <span className="text-[9px] text-gray-500 w-14 text-right hidden sm:inline">{p.type}</span>}
-                              <span className="text-white text-xs font-bold w-12 text-right">{p.power}</span>
-                              <button onClick={() => removePlayer(p)} className="text-gray-600 hover:text-red-400"><IconX size={12} /></button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {!confirmReset ? (
-                    <button onClick={() => setConfirmReset(true)} className="w-full py-3 rounded-xl font-bold border border-red-500/60 text-red-400 bg-red-950/20">
-                      Reset for next week
-                    </button>
-                  ) : (
-                    <div className="rounded-xl border border-red-500/60 bg-red-950/30 p-4">
-                      <p className="text-sm text-red-200 mb-3">This will archive the current roster ({players.length} players) and clear all entries for everyone. Confirm?</p>
-                      <div className="flex gap-2">
-                        <button onClick={doReset} disabled={resetting} className="flex-1 py-2 rounded-lg font-bold text-black" style={{ background: GOLD }}>
-                          {resetting ? "Resetting..." : "Confirm reset"}
-                        </button>
-                        <button onClick={() => setConfirmReset(false)} className="flex-1 py-2 rounded-lg font-medium border border-white/20 text-gray-300">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <button onClick={() => { setHistoryOpen(!historyOpen); if (!historyOpen) loadHistory(); }} className="text-xs text-gray-400 underline">
-                      {historyOpen ? "Hide history" : "View week history"}
-                    </button>
-                    {historyOpen && (
-                      <div className="mt-2 space-y-1">
-                        {history.length === 0 ? <p className="text-xs text-gray-600">No history yet.</p> : history.map((h) => (
-                          <div key={h.date} className="flex justify-between text-xs text-gray-400 border-b border-white/5 py-1">
-                            <span>{formatDate(h.date)}</span><span>{h.count} players</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<DesertStorm />);
+  // history
+  document.getElementById("historyToggle").addEventListener("click", async () => {
+    const box = document.getElementById("historyList");
+    if (!box.classList.contains("hidden")) {
+      box.classList.add("hidden");
+      document.getElementById("historyToggle").textContent = "View week history";
+      return;
+    }
+    const idxSnap = await db.ref(ROOT + "/archiveIndex").once("value");
+    const idx = idxSnap.val() || [];
+    const entries = [];
+    for (const d of idx) {
+      const aSnap = await db.ref(ROOT + "/archive/" + d).once("value");
+      const a = aSnap.val();
+      if (a) entries.push({ date: d, count: Object.keys(a.players || {}).length });
+    }
+    entries.sort((a, b) => (a.date < b.date ? 1 : -1));
+    box.innerHTML = entries.length === 0
+      ? '<p class="text-xs text-gray-600">No history yet.</p>'
+      : entries.map((h) => '<div class="flex justify-between text-xs text-gray-400 border-b border-white/5 py-1"><span>' + formatDate(h.date) + '</span><span>' + h.count + ' players</span></div>').join("");
+    box.classList.remove("hidden");
+    document.getElementById("historyToggle").textContent = "Hide history";
+  });
 </script>
 </body>
 </html>
