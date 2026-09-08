@@ -194,6 +194,23 @@
   }
   .cell-yes{color:var(--ok);}
   .cell-blank{color:var(--steel-dim);}
+  .sugg-cell{
+    cursor:pointer;
+    white-space:normal !important;
+    max-width:420px;
+    line-height:1.5;
+  }
+  .sugg-cell::after{
+    content:'tap to expand';
+    display:block;
+    font-size:11px;
+    color:var(--steel-dim);
+    margin-top:4px;
+    font-style:italic;
+  }
+  .sugg-cell.expanded::after{
+    content:'tap to collapse';
+  }
   .row-flex{
     display:flex;
     gap:12px;
@@ -676,8 +693,22 @@ function renderSuggestions(){
   body.innerHTML = ids.sort((a,b) => (suggestions[b].ts||0)-(suggestions[a].ts||0)).map(id => {
     const s = suggestions[id];
     const date = s.ts ? new Date(s.ts).toLocaleDateString('en-US') : '';
-    return `<tr><td>${date}</td><td>${esc(s.text)}</td></tr>`;
+    const isLong = s.text.length > 70;
+    const short = isLong ? s.text.slice(0, 70) + '…' : s.text;
+    return isLong
+      ? `<tr><td>${date}</td><td class="sugg-cell" id="sugg-${id}" data-expanded="false" onclick="toggleSuggestion('${id}')">${esc(short)}</td></tr>`
+      : `<tr><td>${date}</td><td>${esc(s.text)}</td></tr>`;
   }).join('');
+}
+function toggleSuggestion(id){
+  const cell = document.getElementById('sugg-' + id);
+  const s = suggestions[id];
+  if(!cell || !s) return;
+  const expanded = cell.dataset.expanded === 'true';
+  const short = s.text.length > 70 ? s.text.slice(0, 70) + '…' : s.text;
+  cell.textContent = expanded ? short : s.text;
+  cell.dataset.expanded = expanded ? 'false' : 'true';
+  cell.classList.toggle('expanded', !expanded);
 }
 
 // ---------- admin gate ----------
