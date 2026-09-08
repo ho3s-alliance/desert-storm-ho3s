@@ -470,6 +470,8 @@
             </select>
           </div>
         </div>
+        <label for="wlAlliance">Current alliance</label>
+        <input type="text" id="wlAlliance" placeholder="e.g. None, or current alliance name">
         <button class="btn-primary btn-small" id="addWaitlistBtn">Add to waiting list</button>
         <div class="status-msg" id="waitlistStatus"></div>
       </section>
@@ -479,8 +481,8 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Name</th><th>Power</th><th>Type</th><th></th></tr></thead>
-            <tbody id="waitlistBody"><tr><td colspan="5" class="empty-note">No one waiting.</td></tr></tbody>
+            <thead><tr><th>#</th><th>Name</th><th>Power</th><th>Type</th><th>Current Alliance</th><th>Added On</th><th></th></tr></thead>
+            <tbody id="waitlistBody"><tr><td colspan="7" class="empty-note">No one waiting.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -828,19 +830,21 @@ document.getElementById('addWaitlistBtn').addEventListener('click', () => {
   const name = document.getElementById('wlName').value.trim();
   const power = parsePower(document.getElementById('wlPower').value);
   const type = document.getElementById('wlType').value;
+  const currentAlliance = document.getElementById('wlAlliance').value.trim();
   const statusEl = document.getElementById('waitlistStatus');
   if(!name || isNaN(power) || !type){
     statusEl.textContent = 'Enter power like 57M, 800K or a plain number, and pick a type.';
     statusEl.className = 'status-msg err';
     return;
   }
-  db.ref(`${ROOT}/waitlist`).push({ name, power, type, ts: Date.now() })
+  db.ref(`${ROOT}/waitlist`).push({ name, power, type, currentAlliance, ts: Date.now() })
     .then(() => {
       statusEl.textContent = 'Added to waiting list.';
       statusEl.className = 'status-msg ok';
       document.getElementById('wlName').value = '';
       document.getElementById('wlPower').value = '';
       document.getElementById('wlType').value = '';
+      document.getElementById('wlAlliance').value = '';
     })
     .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
 });
@@ -850,10 +854,11 @@ function renderWaitlist(){
   const countEl = document.getElementById('waitlistCount');
   const ids = Object.keys(waitlist).sort((a,b) => (waitlist[a].ts||0) - (waitlist[b].ts||0));
   if(countEl) countEl.textContent = `${ids.length} waiting`;
-  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="5" class="empty-note">No one waiting.</td></tr>'; return; }
+  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="7" class="empty-note">No one waiting.</td></tr>'; return; }
   body.innerHTML = ids.map((id, idx) => {
     const w = waitlist[id];
-    return `<tr><td>${idx + 1}</td><td>${esc(w.name)}</td><td>${fmtPower(w.power)}</td><td><span class="pill ${pillClass(w.type)}">${esc(w.type)}</span></td>
+    const addedOn = w.ts ? new Date(w.ts).toLocaleDateString('en-US') : '';
+    return `<tr><td>${idx + 1}</td><td>${esc(w.name)}</td><td>${fmtPower(w.power)}</td><td><span class="pill ${pillClass(w.type)}">${esc(w.type)}</span></td><td>${esc(w.currentAlliance || '—')}</td><td>${addedOn}</td>
       <td style="white-space:nowrap;">
         <button class="btn-ghost btn-small" onclick="approveWaitlist('${id}')">Add to alliance</button>
         <button class="btn-ghost btn-small" onclick="editWaitlist('${id}')">Edit</button>
@@ -874,7 +879,9 @@ function editWaitlist(id){
   if(newType === null) return;
   const cleanType = ['Tank','Missile','Aircraft'].find(t => t.toLowerCase() === newType.trim().toLowerCase());
   if(!cleanType){ alert('Type must be exactly Tank, Missile or Aircraft.'); return; }
-  db.ref(`${ROOT}/waitlist/${id}`).update({ name: newName.trim(), power: newPower, type: cleanType });
+  const newAlliance = prompt('Current alliance:', w.currentAlliance || '');
+  if(newAlliance === null) return;
+  db.ref(`${ROOT}/waitlist/${id}`).update({ name: newName.trim(), power: newPower, type: cleanType, currentAlliance: newAlliance.trim() });
 }
 function removeWaitlist(id){
   if(!confirm('Remove this person from the waiting list?')) return;
@@ -953,7 +960,14 @@ document.getElementById('exportBtn').addEventListener('click', () => {
 
   const waitlistRows = Object.values(waitlist)
     .sort((a,b) => (a.ts||0) - (b.ts||0))
-    .map((w, idx) => ({ '#': idx + 1, Name: w.name, 'Squad Power': fmtPower(w.power), Type: w.type }));
+    .map((w, idx) => ({
+      '#': idx + 1,
+      Name: w.name,
+      'Squad Power': fmtPower(w.power),
+      Type: w.type,
+      'Current Alliance': w.currentAlliance || '',
+      'Added On': w.ts ? new Date(w.ts).toLocaleDateString('en-US') : ''
+    }));
   const wsWaitlist = XLSX.utils.json_to_sheet(waitlistRows);
   autoWidth(wsWaitlist, waitlistRows);
   XLSX.utils.book_append_sheet(wb, wsWaitlist, 'Waiting List');
