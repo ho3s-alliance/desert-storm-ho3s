@@ -380,12 +380,13 @@
     <div class="adm-panel active" id="tab-players">
       <section class="card">
         <div class="top-row"><h2 style="margin:0;">All players</h2>
+          <span id="playerCount" class="subtitle" style="margin:0;">0 / 100 registered</span>
           <button class="btn-ghost btn-small" id="exportBtn">Export to Excel</button>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Name</th><th>Power</th><th>Type</th><th>Points</th><th></th></tr></thead>
-            <tbody id="adminPlayersBody"><tr><td colspan="5" class="empty-note">No players yet.</td></tr></tbody>
+            <thead><tr><th>#</th><th>Name</th><th>Power</th><th>Type</th><th>Points</th><th></th></tr></thead>
+            <tbody id="adminPlayersBody"><tr><td colspan="6" class="empty-note">No players yet.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -552,11 +553,13 @@ function pointsFor(pid){
 function renderAdminPlayers(){
   const body = document.getElementById('adminPlayersBody');
   const ids = Object.keys(players);
-  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="5" class="empty-note">No players yet.</td></tr>'; return; }
+  const countEl = document.getElementById('playerCount');
+  if(countEl) countEl.textContent = `${ids.length} / 100 registered`;
+  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="6" class="empty-note">No players yet.</td></tr>'; return; }
   const sorted = ids.slice().sort((a,b) => players[b].power - players[a].power);
-  body.innerHTML = sorted.map(id => {
+  body.innerHTML = sorted.map((id, idx) => {
     const p = players[id];
-    return `<tr><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
+    return `<tr><td>${idx + 1}</td><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
       <td style="white-space:nowrap;">
         <button class="btn-ghost btn-small" onclick="editPlayer('${id}')">Edit</button>
         <button class="btn-danger" onclick="deletePlayer('${id}')">Remove</button>
@@ -809,7 +812,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   autoWidth(wsSummary, summaryRows);
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  const playersRows = Object.values(players).sort((a,b) => b.power - a.power).map(p => ({ Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
+  const playersRows = Object.values(players).sort((a,b) => b.power - a.power).map((p, idx) => ({ '#': idx + 1, Name: p.name, 'Squad Power': fmtPower(p.power), Type: p.type }));
   const wsPlayers = XLSX.utils.json_to_sheet(playersRows);
   autoWidth(wsPlayers, playersRows);
   XLSX.utils.book_append_sheet(wb, wsPlayers, 'Players');
