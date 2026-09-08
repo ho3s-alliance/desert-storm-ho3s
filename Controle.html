@@ -373,6 +373,7 @@
       <button class="adm-tab-btn active" data-tab="players">Players</button>
       <button class="adm-tab-btn" data-tab="events">Events</button>
       <button class="adm-tab-btn" data-tab="train">Train</button>
+      <button class="adm-tab-btn" data-tab="waitlist">Waiting List</button>
       <button class="adm-tab-btn" data-tab="suggestions">Suggestions</button>
     </div>
 
@@ -447,6 +448,44 @@
       </section>
     </div>
 
+    <!-- WAITING LIST TAB -->
+    <div class="adm-panel" id="tab-waitlist">
+      <section class="card">
+        <h2>Add to waiting list</h2>
+        <div class="subtitle" style="margin-bottom:12px;">Manually add players who want to join the alliance.</div>
+        <label for="wlName">Player name</label>
+        <input type="text" id="wlName" placeholder="Player name">
+        <div class="row-flex">
+          <div>
+            <label for="wlPower">First squad power</label>
+            <input type="text" id="wlPower" placeholder="e.g. 57M">
+          </div>
+          <div>
+            <label for="wlType">Squad type</label>
+            <select id="wlType">
+              <option value="" disabled selected>Select type</option>
+              <option value="Tank">Tank</option>
+              <option value="Missile">Missile</option>
+              <option value="Aircraft">Aircraft</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary btn-small" id="addWaitlistBtn">Add to waiting list</button>
+        <div class="status-msg" id="waitlistStatus"></div>
+      </section>
+      <section class="card">
+        <div class="top-row"><h2 style="margin:0;">Waiting list</h2>
+          <span id="waitlistCount" class="subtitle" style="margin:0;">0 waiting</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Power</th><th>Type</th><th></th></tr></thead>
+            <tbody id="waitlistBody"><tr><td colspan="5" class="empty-note">No one waiting.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
     <!-- SUGGESTIONS TAB -->
     <div class="adm-panel" id="tab-suggestions">
       <section class="card">
@@ -494,6 +533,7 @@ let participation = {}; // eventId -> { playerId: true/false }
 let trainDates = {};    // id -> {date}
 let trainAttendance = {}; // trainDateId -> { playerId: 'yes'|'no' }
 let suggestions = {};   // id -> {text, ts}
+let waitlist = {};      // id -> {name, power, type, ts}
 let registrationLocked = false;
 let isAdmin = false;
 
@@ -532,6 +572,7 @@ db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val()
 db.ref(`${ROOT}/trainDates`).on('value', snap => { trainDates = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/trainAttendance`).on('value', snap => { trainAttendance = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/suggestions`).on('value', snap => { suggestions = snap.val() || {}; renderSuggestions(); });
+db.ref(`${ROOT}/waitlist`).on('value', snap => { waitlist = snap.val() || {}; renderWaitlist(); });
 db.ref(`${ROOT}/settings/locked`).on('value', snap => {
   registrationLocked = !!snap.val();
   document.getElementById('lockedNotice').classList.toggle('hidden', !registrationLocked);
@@ -782,6 +823,71 @@ function deleteTrainDate(id){
   db.ref(`${ROOT}/trainAttendance/${id}`).remove();
 }
 
+// ---------- waiting list ----------
+document.getElementById('addWaitlistBtn').addEventListener('click', () => {
+  const name = document.getElementById('wlName').value.trim();
+  const power = parsePower(document.getElementById('wlPower').value);
+  const type = document.getElementById('wlType').value;
+  const statusEl = document.getElementById('waitlistStatus');
+  if(!name || isNaN(power) || !type){
+    statusEl.textContent = 'Enter power like 57M, 800K or a plain number, and pick a type.';
+    statusEl.className = 'status-msg err';
+    return;
+  }
+  db.ref(`${ROOT}/waitlist`).push({ name, power, type, ts: Date.now() })
+    .then(() => {
+      statusEl.textContent = 'Added to waiting list.';
+      statusEl.className = 'status-msg ok';
+      document.getElementById('wlName').value = '';
+      document.getElementById('wlPower').value = '';
+      document.getElementById('wlType').value = '';
+    })
+    .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
+});
+
+function renderWaitlist(){
+  const body = document.getElementById('waitlistBody');
+  const countEl = document.getElementById('waitlistCount');
+  const ids = Object.keys(waitlist).sort((a,b) => (waitlist[a].ts||0) - (waitlist[b].ts||0));
+  if(countEl) countEl.textContent = `${ids.length} waiting`;
+  if(ids.length === 0){ body.innerHTML = '<tr><td colspan="5" class="empty-note">No one waiting.</td></tr>'; return; }
+  body.innerHTML = ids.map((id, idx) => {
+    const w = waitlist[id];
+    return `<tr><td>${idx + 1}</td><td>${esc(w.name)}</td><td>${fmtPower(w.power)}</td><td><span class="pill ${pillClass(w.type)}">${esc(w.type)}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-ghost btn-small" onclick="approveWaitlist('${id}')">Add to alliance</button>
+        <button class="btn-ghost btn-small" onclick="editWaitlist('${id}')">Edit</button>
+        <button class="btn-danger" onclick="removeWaitlist('${id}')">Remove</button>
+      </td></tr>`;
+  }).join('');
+}
+function editWaitlist(id){
+  const w = waitlist[id];
+  if(!w) return;
+  const newName = prompt('Player name:', w.name);
+  if(newName === null || !newName.trim()) return;
+  const newPowerInput = prompt(`Squad power for ${newName} (e.g. 73M):`, fmtPower(w.power));
+  if(newPowerInput === null) return;
+  const newPower = parsePower(newPowerInput);
+  if(isNaN(newPower)){ alert('Could not read that power value — use something like 57M, 800K or a plain number.'); return; }
+  const newType = prompt('Squad type (Tank, Missile or Aircraft):', w.type);
+  if(newType === null) return;
+  const cleanType = ['Tank','Missile','Aircraft'].find(t => t.toLowerCase() === newType.trim().toLowerCase());
+  if(!cleanType){ alert('Type must be exactly Tank, Missile or Aircraft.'); return; }
+  db.ref(`${ROOT}/waitlist/${id}`).update({ name: newName.trim(), power: newPower, type: cleanType });
+}
+function removeWaitlist(id){
+  if(!confirm('Remove this person from the waiting list?')) return;
+  db.ref(`${ROOT}/waitlist/${id}`).remove();
+}
+function approveWaitlist(id){
+  const w = waitlist[id];
+  if(!w) return;
+  if(!confirm(`Move ${w.name} to the alliance player list?`)) return;
+  db.ref(`${ROOT}/players`).push({ name: w.name, power: w.power, type: w.type, ts: Date.now() })
+    .then(() => db.ref(`${ROOT}/waitlist/${id}`).remove());
+}
+
 // ---------- export ----------
 function autoWidth(ws, rows){
   if(!rows.length) return;
@@ -828,16 +934,29 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   autoWidth(wsEvents, evRows);
   XLSX.utils.book_append_sheet(wb, wsEvents, 'Event Participation');
 
-  const trainRows = [];
-  Object.keys(trainDates).forEach(did => {
-    Object.keys(players).forEach(pid => {
+  const trainDateIds = Object.keys(trainDates).sort((a,b) => (trainDates[a].date||'').localeCompare(trainDates[b].date||''));
+  const trainRows = playerIds.map(pid => {
+    const row = {
+      Player: players[pid].name,
+      Points: pointsFor(pid),
+      'Times Went': trainDateIds.filter(did => trainAttendance[did] && trainAttendance[did][pid] === 'yes').length
+    };
+    trainDateIds.forEach(did => {
       const val = trainAttendance[did] && trainAttendance[did][pid];
-      trainRows.push({ Date: trainDates[did].date, Player: players[pid].name, Status: val === 'yes' ? 'Went' : '' });
+      row[trainDates[did].date] = val === 'yes' ? 'Went' : '';
     });
+    return row;
   });
   const wsTrain = XLSX.utils.json_to_sheet(trainRows);
   autoWidth(wsTrain, trainRows);
   XLSX.utils.book_append_sheet(wb, wsTrain, 'Train History');
+
+  const waitlistRows = Object.values(waitlist)
+    .sort((a,b) => (a.ts||0) - (b.ts||0))
+    .map((w, idx) => ({ '#': idx + 1, Name: w.name, 'Squad Power': fmtPower(w.power), Type: w.type }));
+  const wsWaitlist = XLSX.utils.json_to_sheet(waitlistRows);
+  autoWidth(wsWaitlist, waitlistRows);
+  XLSX.utils.book_append_sheet(wb, wsWaitlist, 'Waiting List');
 
   const sugRows = Object.values(suggestions).map(s => ({ Date: s.ts ? new Date(s.ts).toLocaleDateString('en-US') : '', Suggestion: s.text }));
   const wsSug = XLSX.utils.json_to_sheet(sugRows);
