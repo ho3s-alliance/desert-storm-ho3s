@@ -430,15 +430,9 @@
         <h2>Participation</h2>
         <label for="evSelect">Choose event</label>
         <select id="evSelect"><option value="">No events yet</option></select>
-        <div class="table-scroll" style="margin-top:14px;">
-          <table>
-            <thead><tr><th>Player</th><th>Participated</th></tr></thead>
-            <tbody id="participationBody"><tr><td colspan="2" class="empty-note">Select an event above.</td></tr></tbody>
-          </table>
-        </div>
 
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">
-          <label for="bulkParticipationInput">Or paste names of who participated (one per line)</label>
+        <div style="margin-top:20px;">
+          <label for="bulkParticipationInput">Paste names of who participated (one per line)</label>
           <textarea id="bulkParticipationInput" placeholder="Leti
 WreckitRepeat
 POPURI"></textarea>
@@ -594,9 +588,9 @@ function parsePower(input){
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
 // ---------- Firebase listeners ----------
-db.ref(`${ROOT}/players`).on('value', snap => { players = snap.val() || {}; renderPlayers(); renderTrainTable(); renderParticipation(); });
+db.ref(`${ROOT}/players`).on('value', snap => { players = snap.val() || {}; renderPlayers(); renderTrainTable(); });
 db.ref(`${ROOT}/events`).on('value', snap => { events = snap.val() || {}; renderEventsList(); renderEventSelect(); });
-db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderParticipation(); renderAdminPlayers(); renderTrainTable(); });
+db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val() || {}; renderAdminPlayers(); renderTrainTable(); });
 db.ref(`${ROOT}/trainDates`).on('value', snap => { trainDates = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/trainAttendance`).on('value', snap => { trainAttendance = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/suggestions`).on('value', snap => { suggestions = snap.val() || {}; renderSuggestions(); });
@@ -639,7 +633,11 @@ function renderAdminPlayers(){
 function editPlayer(id){
   const p = players[id];
   if(!p) return;
-  const newPowerInput = prompt(`New squad power for ${p.name} (e.g. 73M):`, fmtPower(p.power));
+  const newName = prompt('Player name:', p.name);
+  if(newName === null) return;
+  const cleanName = newName.trim();
+  if(!cleanName){ alert('Name cannot be empty.'); return; }
+  const newPowerInput = prompt(`Squad power for ${cleanName} (e.g. 73M):`, fmtPower(p.power));
   if(newPowerInput === null) return;
   const newPower = parsePower(newPowerInput);
   if(isNaN(newPower)){ alert('Could not read that power value — use something like 57M, 800K or a plain number.'); return; }
@@ -647,7 +645,7 @@ function editPlayer(id){
   if(newType === null) return;
   const cleanType = ['Tank','Missile','Aircraft'].find(t => t.toLowerCase() === newType.trim().toLowerCase());
   if(!cleanType){ alert('Type must be exactly Tank, Missile or Aircraft.'); return; }
-  db.ref(`${ROOT}/players/${id}`).update({ power: newPower, type: cleanType });
+  db.ref(`${ROOT}/players/${id}`).update({ name: cleanName, power: newPower, type: cleanType });
 }
 
 function deletePlayer(id){
@@ -791,34 +789,13 @@ function renderEventSelect(){
   const sel = document.getElementById('evSelect');
   const current = sel.value;
   const ids = Object.keys(events).sort((a,b)=> (events[a].date||'').localeCompare(events[b].date||''));
-  if(ids.length === 0){ sel.innerHTML = '<option value="">No events yet</option>'; renderParticipation(); return; }
+  if(ids.length === 0){ sel.innerHTML = '<option value="">No events yet</option>'; return; }
   sel.innerHTML = ids.map(id => `<option value="${id}">${esc(events[id].name)} — ${esc(events[id].date)}</option>`).join('');
   if(ids.includes(current)) sel.value = current;
-  renderParticipation();
 }
 document.getElementById('evSelect').addEventListener('change', () => {
-  renderParticipation();
   document.getElementById('bulkMatchPreview').innerHTML = '';
 });
-
-function renderParticipation(){
-  const body = document.getElementById('participationBody');
-  const evId = document.getElementById('evSelect').value;
-  const playerIds = Object.keys(players);
-  if(!evId || playerIds.length === 0){
-    body.innerHTML = '<tr><td colspan="2" class="empty-note">Select an event and make sure players are registered.</td></tr>';
-    return;
-  }
-  body.innerHTML = playerIds.map(pid => {
-    const p = players[pid];
-    const went = participation[evId] && participation[evId][pid];
-    return `<tr><td>${esc(p.name)}</td><td class="cell-toggle ${went ? 'cell-yes' : 'cell-blank'}" onclick="toggleParticipation('${evId}','${pid}')">${went ? 'Yes' : '—'}</td></tr>`;
-  }).join('');
-}
-function toggleParticipation(evId, pid){
-  const current = participation[evId] && participation[evId][pid];
-  db.ref(`${ROOT}/participation/${evId}/${pid}`).set(!current);
-}
 
 // ---------- bulk participation from pasted names ----------
 document.getElementById('matchBulkBtn').addEventListener('click', () => {
@@ -839,31 +816,55 @@ document.getElementById('matchBulkBtn').addEventListener('click', () => {
         ${matches.map((m,i) => `
           <tr>
             <td>${esc(m.line)}</td>
-            <td>${m.pid ? esc(players[m.pid].name) : '<span style="color:var(--ember-glow);">Not found</span>'}</td>
-            <td>${m.pid ? `<input type="checkbox" data-idx="${i}" checked>` : '—'}</td>
+            <td>${m.pid ? esc(players[m.pid].name) : '<span style="color:var(--ember-glow);">Not found — add as new?</span>'}</td>
+            <td><input type="checkbox" class="bulk-mark" data-idx="${i}" checked></td>
           </tr>`).join('')}
       </tbody>
     </table></div>
-    <div class="note-box" style="margin-top:12px;">Everyone else already registered for the alliance will be marked as <strong>not participated</strong> in this event. Uncheck any row above you don't want marked, or fix the pasted name and try again if it says "Not found".</div>
+    <div class="note-box" style="margin-top:12px;">Everyone else already registered for the alliance will be marked as <strong>not participated</strong> in this event. Rows marked "Not found" will be added as <strong>new players with 0 power</strong> (fix the name, power and type afterwards using Edit in the Players tab). Uncheck any row you don't want applied.</div>
     <button class="btn-primary btn-small" id="applyBulkBtn" style="margin-top:8px;">Confirm &amp; apply</button>
     <div class="status-msg" id="bulkApplyStatus"></div>
   `;
 
-  document.getElementById('applyBulkBtn').addEventListener('click', () => {
-    const checkedIdx = new Set();
-    preview.querySelectorAll('input[type=checkbox]:checked').forEach(cb => checkedIdx.add(parseInt(cb.dataset.idx, 10)));
-    const confirmedIds = new Set();
-    matches.forEach((m, i) => { if(m.pid && checkedIdx.has(i)) confirmedIds.add(m.pid); });
-    const updates = {};
-    playerIds.forEach(pid => { updates[pid] = confirmedIds.has(pid); });
+  document.getElementById('applyBulkBtn').addEventListener('click', async () => {
     const statusEl = document.getElementById('bulkApplyStatus');
-    db.ref(`${ROOT}/participation/${evId}`).set(updates)
-      .then(() => {
-        statusEl.textContent = 'Participation updated for this event.';
-        statusEl.className = 'status-msg ok';
-        document.getElementById('bulkParticipationInput').value = '';
-      })
-      .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
+    statusEl.textContent = 'Applying…';
+    statusEl.className = 'status-msg';
+    const checkedIdx = new Set();
+    preview.querySelectorAll('input.bulk-mark:checked').forEach(cb => checkedIdx.add(parseInt(cb.dataset.idx, 10)));
+
+    try {
+      const newIdxToKey = {};
+      const createPromises = [];
+      matches.forEach((m, i) => {
+        if(!m.pid && checkedIdx.has(i)){
+          const ref = db.ref(`${ROOT}/players`).push();
+          newIdxToKey[i] = ref.key;
+          createPromises.push(ref.set({ name: m.line, power: 0, type: 'Tank', ts: Date.now() }));
+        }
+      });
+      await Promise.all(createPromises);
+
+      const confirmedIds = new Set();
+      matches.forEach((m, i) => {
+        if(!checkedIdx.has(i)) return;
+        if(m.pid) confirmedIds.add(m.pid);
+        else if(newIdxToKey[i]) confirmedIds.add(newIdxToKey[i]);
+      });
+
+      const allPlayerIds = new Set([...playerIds, ...Object.values(newIdxToKey)]);
+      const updates = {};
+      allPlayerIds.forEach(pid => { updates[pid] = confirmedIds.has(pid); });
+      await db.ref(`${ROOT}/participation/${evId}`).set(updates);
+
+      const addedCount = createPromises.length;
+      statusEl.textContent = 'Participation updated' + (addedCount ? ` — ${addedCount} new player(s) added with 0 power. Fix their names/power/type in the Players tab.` : '.');
+      statusEl.className = 'status-msg ok';
+      document.getElementById('bulkParticipationInput').value = '';
+    } catch(err) {
+      statusEl.textContent = 'Error: ' + err.message;
+      statusEl.className = 'status-msg err';
+    }
   });
 });
 
