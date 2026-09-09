@@ -38,11 +38,12 @@
         </svg>
       </div>
       <h1 class="font-display text-3xl tracking-wide" style="color:#EDE7D9">
-        DESERT <span style="color:#E8B923">STORM</span>
+        <span id="eventTitleMain">DESERT</span> <span style="color:#E8B923">STORM</span>
       </h1>
       <div class="h-px mt-5 mx-auto w-40" style="background:linear-gradient(90deg,#3b82f6,#E8B923,#ef4444)"></div>
       <div class="mt-4 flex items-center justify-center gap-2">
         <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">TriP Alliance</span>
+        <span id="eventTypeBadge" class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30">DS</span>
         <span id="connBadge" class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-gray-500">● checking...</span>
       </div>
     </div>
@@ -129,6 +130,15 @@
               <input id="weekDate" type="date" class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none focus:border-yellow-500/60" />
               <button id="saveWeekBtn" class="px-4 rounded-lg font-semibold text-black" style="background:#E8B923">Save</button>
             </div>
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase tracking-widest text-gray-400 mb-2">Event type</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-event="DS" class="event-btn py-2.5 rounded-lg text-sm font-medium border bg-black/30 border-white/10 text-gray-300">🏜️ DS — Desert Storm</button>
+              <button type="button" data-event="DC" class="event-btn py-2.5 rounded-lg text-sm font-medium border bg-black/30 border-white/10 text-gray-300">⛰️ DC — Canyon Storm</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-1">Sets which event people are currently registering for.</p>
           </div>
 
           <div>
@@ -241,6 +251,12 @@
   const ROOT = "troopRegistration";
   const ADMIN_PIN = "2026";
 
+  const EVENT_LABELS = {
+    DS: { name: "Desert Storm", titleWord: "DESERT", file: "desert-storm" },
+    DC: { name: "Canyon Storm", titleWord: "CANYON", file: "canyon-storm" }
+  };
+  let currentEventType = "DS";
+
   function slugify(name) {
     const base = name.trim().toLowerCase().normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -279,11 +295,43 @@
 
   // --- public: week date + lock status (visible to everyone, no login needed) ---
   let isLocked = false;
+  let currentWeekDate = "";
+
+  function renderWeekDisplay() {
+    const el = document.getElementById("weekDisplay");
+    const label = EVENT_LABELS[currentEventType] || EVENT_LABELS.DS;
+    if (currentWeekDate) el.textContent = "📅 Week of " + formatDate(currentWeekDate) + " — " + label.name;
+    else el.textContent = "";
+  }
+
+  function updateEventUI() {
+    const label = EVENT_LABELS[currentEventType] || EVENT_LABELS.DS;
+    document.getElementById("eventTitleMain").textContent = label.titleWord;
+    document.title = label.name + " — TriP Alliance";
+    const badge = document.getElementById("eventTypeBadge");
+    badge.textContent = currentEventType;
+    document.querySelectorAll(".event-btn").forEach((b) => {
+      const active = b.dataset.event === currentEventType;
+      b.className = "event-btn py-2.5 rounded-lg text-sm font-medium border " + (active
+        ? "bg-amber-950/40 border-amber-500 text-amber-300"
+        : "bg-black/30 border-white/10 text-gray-300");
+    });
+    renderWeekDisplay();
+  }
+
   db.ref(ROOT + "/week").on("value", (snap) => {
     const w = snap.val();
-    const el = document.getElementById("weekDisplay");
-    if (w && w.date) el.textContent = "📅 Week of " + formatDate(w.date);
-    else el.textContent = "";
+    currentWeekDate = (w && w.date) || "";
+    renderWeekDisplay();
+  });
+  db.ref(ROOT + "/eventType").on("value", (snap) => {
+    currentEventType = snap.val() || "DS";
+    updateEventUI();
+  });
+  document.querySelectorAll(".event-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await db.ref(ROOT + "/eventType").set(btn.dataset.event);
+    });
   });
   db.ref(ROOT + "/locked").on("value", (snap) => {
     isLocked = !!snap.val();
@@ -347,7 +395,7 @@
     const btn = document.getElementById("registerBtn");
     btn.disabled = true; btn.textContent = "Saving...";
     try {
-      await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: selectedTeam, power, type, ts: Date.now() });
+      await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: selectedTeam, power, type, event: currentEventType, ts: Date.now() });
       document.getElementById("formSuccess").classList.remove("hidden");
       nameEl.value = ""; powerEl.value = ""; typeEl.value = "";
       selectedTeam = null;
@@ -498,7 +546,7 @@
       return;
     }
     errEl.classList.add("hidden");
-    await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: manualTeam, power, type, ts: Date.now() });
+    await db.ref(ROOT + "/players/" + slugify(name)).set({ name, team: manualTeam, power, type, event: currentEventType, ts: Date.now() });
     document.getElementById("mName").value = "";
     document.getElementById("mPower").value = "";
     document.getElementById("mType").value = "";
@@ -538,7 +586,8 @@
     XLSX.utils.book_append_sheet(wb, buildSheet(teamB), "Team B");
     if (teamN.length) XLSX.utils.book_append_sheet(wb, buildSheet(teamN), "A or B");
     XLSX.utils.book_append_sheet(wb, buildSheet(sorted), "All");
-    XLSX.writeFile(wb, "desert-storm-" + (currentWeek || "ranking") + ".xlsx");
+    const fileLabel = (EVENT_LABELS[currentEventType] || EVENT_LABELS.DS).file;
+    XLSX.writeFile(wb, fileLabel + "-" + (currentWeek || "ranking") + ".xlsx");
   });
 
   // reset
@@ -577,7 +626,7 @@
       await db.ref(ROOT + "/archiveIndex").set(idx);
       const playersObj = {};
       players.forEach((p) => { playersObj[slugify(p.name)] = p; });
-      await db.ref(ROOT + "/archive/" + currentWeek).set({ date: currentWeek, players: playersObj });
+      await db.ref(ROOT + "/archive/" + currentWeek).set({ date: currentWeek, event: currentEventType, players: playersObj });
     }
     await db.ref(ROOT + "/players").remove();
     const today = currentMonday();
@@ -603,12 +652,12 @@
     for (const d of idx) {
       const aSnap = await db.ref(ROOT + "/archive/" + d).once("value");
       const a = aSnap.val();
-      if (a) entries.push({ date: d, count: Object.keys(a.players || {}).length });
+      if (a) entries.push({ date: d, count: Object.keys(a.players || {}).length, event: a.event || "DS" });
     }
     entries.sort((a, b) => (a.date < b.date ? 1 : -1));
     box.innerHTML = entries.length === 0
       ? '<p class="text-xs text-gray-600">No history yet.</p>'
-      : entries.map((h) => '<div class="flex justify-between text-xs text-gray-400 border-b border-white/5 py-1"><span>' + formatDate(h.date) + '</span><span>' + h.count + ' players</span></div>').join("");
+      : entries.map((h) => '<div class="flex justify-between text-xs text-gray-400 border-b border-white/5 py-1"><span>' + formatDate(h.date) + ' · ' + h.event + '</span><span>' + h.count + ' players</span></div>').join("");
     box.classList.remove("hidden");
     document.getElementById("historyToggle").textContent = "Hide history";
   });
