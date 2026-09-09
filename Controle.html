@@ -431,8 +431,14 @@
         <label for="evSelect">Choose event</label>
         <select id="evSelect"><option value="">No events yet</option></select>
 
-        <div style="margin-top:20px;">
-          <label for="bulkParticipationInput">Paste names of who participated (one per line)</label>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-primary btn-small" id="markAllBtn" style="margin-top:0;">Mark everyone as participated</button>
+          <button class="btn-ghost btn-small" id="clearAllBtn">Clear everyone (no)</button>
+        </div>
+        <div class="status-msg" id="markAllStatus"></div>
+
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line);">
+          <label for="bulkParticipationInput">Or paste names of who participated (one per line)</label>
           <textarea id="bulkParticipationInput" placeholder="Leti
 WreckitRepeat
 POPURI"></textarea>
@@ -555,6 +561,7 @@ let participation = {}; // eventId -> { playerId: true/false }
 let trainDates = {};    // id -> {date}
 let trainAttendance = {}; // trainDateId -> { playerId: 'yes'|'no' }
 let suggestions = {};   // id -> {text, ts}
+let participationNotes = {}; // eventId -> raw pasted text, kept for reference
 let waitlist = {};      // id -> {name, power, type, ts}
 let registrationLocked = false;
 let isAdmin = false;
@@ -594,6 +601,11 @@ db.ref(`${ROOT}/participation`).on('value', snap => { participation = snap.val()
 db.ref(`${ROOT}/trainDates`).on('value', snap => { trainDates = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/trainAttendance`).on('value', snap => { trainAttendance = snap.val() || {}; renderTrainTable(); });
 db.ref(`${ROOT}/suggestions`).on('value', snap => { suggestions = snap.val() || {}; renderSuggestions(); });
+db.ref(`${ROOT}/participationNotes`).on('value', snap => {
+  participationNotes = snap.val() || {};
+  const evId = document.getElementById('evSelect').value;
+  if(evId) document.getElementById('bulkParticipationInput').value = participationNotes[evId] || '';
+});
 db.ref(`${ROOT}/waitlist`).on('value', snap => { waitlist = snap.val() || {}; renderWaitlist(); });
 db.ref(`${ROOT}/settings/locked`).on('value', snap => {
   registrationLocked = !!snap.val();
@@ -795,6 +807,33 @@ function renderEventSelect(){
 }
 document.getElementById('evSelect').addEventListener('change', () => {
   document.getElementById('bulkMatchPreview').innerHTML = '';
+  const evId = document.getElementById('evSelect').value;
+  document.getElementById('bulkParticipationInput').value = evId ? (participationNotes[evId] || '') : '';
+});
+
+document.getElementById('markAllBtn').addEventListener('click', () => {
+  const evId = document.getElementById('evSelect').value;
+  const statusEl = document.getElementById('markAllStatus');
+  if(!evId){ statusEl.textContent = 'Choose an event above first.'; statusEl.className = 'status-msg err'; return; }
+  if(Object.keys(players).length === 0){ statusEl.textContent = 'No players registered yet.'; statusEl.className = 'status-msg err'; return; }
+  if(!confirm('Mark ALL registered players as participated in this event?')) return;
+  const updates = {};
+  Object.keys(players).forEach(pid => { updates[pid] = true; });
+  db.ref(`${ROOT}/participation/${evId}`).set(updates)
+    .then(() => { statusEl.textContent = 'Everyone marked as participated.'; statusEl.className = 'status-msg ok'; })
+    .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  const evId = document.getElementById('evSelect').value;
+  const statusEl = document.getElementById('markAllStatus');
+  if(!evId){ statusEl.textContent = 'Choose an event above first.'; statusEl.className = 'status-msg err'; return; }
+  if(!confirm('Clear participation for everyone in this event?')) return;
+  const updates = {};
+  Object.keys(players).forEach(pid => { updates[pid] = false; });
+  db.ref(`${ROOT}/participation/${evId}`).set(updates)
+    .then(() => { statusEl.textContent = 'Cleared — everyone set to not participated.'; statusEl.className = 'status-msg ok'; })
+    .catch(err => { statusEl.textContent = 'Error: ' + err.message; statusEl.className = 'status-msg err'; });
 });
 
 // ---------- bulk participation from pasted names ----------
@@ -856,11 +895,11 @@ document.getElementById('matchBulkBtn').addEventListener('click', () => {
       const updates = {};
       allPlayerIds.forEach(pid => { updates[pid] = confirmedIds.has(pid); });
       await db.ref(`${ROOT}/participation/${evId}`).set(updates);
+      await db.ref(`${ROOT}/participationNotes/${evId}`).set(raw);
 
       const addedCount = createPromises.length;
       statusEl.textContent = 'Participation updated' + (addedCount ? ` — ${addedCount} new player(s) added with 0 power. Fix their names/power/type in the Players tab.` : '.');
       statusEl.className = 'status-msg ok';
-      document.getElementById('bulkParticipationInput').value = '';
     } catch(err) {
       statusEl.textContent = 'Error: ' + err.message;
       statusEl.className = 'status-msg err';
