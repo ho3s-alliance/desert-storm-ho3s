@@ -621,8 +621,34 @@ function renderPlayers(){
   renderAdminPlayers();
 }
 
-function pointsFor(pid){
+function eventPointsFor(pid){
   return Object.keys(participation).filter(evId => participation[evId] && participation[evId][pid]).length;
+}
+function pointsFor(pid){
+  const p = players[pid];
+  const bonus = (p && p.bonusPoints) || 0;
+  return eventPointsFor(pid) + bonus;
+}
+
+function showPointsBreakdown(id){
+  const p = players[id];
+  if(!p) return;
+  const evNames = Object.keys(events)
+    .filter(evId => participation[evId] && participation[evId][id])
+    .sort((a,b) => (events[a].date||'').localeCompare(events[b].date||''))
+    .map(evId => `• ${events[evId].name} (${events[evId].date})`);
+  const bonus = p.bonusPoints || 0;
+  const eventPts = evNames.length;
+  const total = eventPts + bonus;
+  const list = evNames.length ? evNames.join('\n') : 'No events yet.';
+  const msg = `${p.name} — ${total} point(s) total\n\nFrom events (${eventPts}):\n${list}\n\nBonus points: ${bonus}\n\nTap OK to change bonus points, Cancel to just close.`;
+  if(confirm(msg)){
+    const input = prompt('Bonus points (use a negative number to subtract):', bonus);
+    if(input === null) return;
+    const val = parseInt(input, 10);
+    if(isNaN(val)){ alert('Enter a whole number.'); return; }
+    db.ref(`${ROOT}/players/${id}`).update({ bonusPoints: val });
+  }
 }
 
 function renderAdminPlayers(){
@@ -634,7 +660,7 @@ function renderAdminPlayers(){
   const sorted = ids.slice().sort((a,b) => players[b].power - players[a].power);
   body.innerHTML = sorted.map((id, idx) => {
     const p = players[id];
-    return `<tr><td>${idx + 1}</td><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td>${pointsFor(id)}</td>
+    return `<tr><td>${idx + 1}</td><td>${esc(p.name)}</td><td>${fmtPower(p.power)}</td><td><span class="pill ${pillClass(p.type)}">${esc(p.type)}</span></td><td style="cursor:pointer;text-decoration:underline dotted;color:var(--warn);" onclick="showPointsBreakdown('${id}')" title="Tap to see breakdown or edit bonus points">${pointsFor(id)}</td>
       <td style="white-space:nowrap;">
         <button class="btn-ghost btn-small" onclick="editPlayer('${id}')">Edit</button>
         <button class="btn-danger" onclick="deletePlayer('${id}')">Remove</button>
@@ -850,33 +876,32 @@ document.getElementById('matchBulkBtn').addEventListener('click', () => {
 
   preview.innerHTML = `
     <div class="table-scroll"><table>
-      <thead><tr><th>Pasted name</th><th>Matched player</th><th>Mark?</th></tr></thead>
+      <thead><tr><th>Name</th><th>Participated?</th></tr></thead>
       <tbody>
         ${matches.map((m,i) => `
           <tr>
-            <td>${esc(m.line)}</td>
-            <td>${m.pid ? esc(players[m.pid].name) : '<span style="color:var(--ember-glow);">Not found — add as new?</span>'}</td>
-            <td><input type="checkbox" class="bulk-mark" data-idx="${i}" checked></td>
+            <td>${esc(m.line)}${m.pid ? '' : ' <span style="color:var(--steel-dim);font-size:12px;">(new — will be added)</span>'}</td>
+            <td><select class="bulk-mark" data-idx="${i}"><option value="yes" selected>Yes</option><option value="no">No</option></select></td>
           </tr>`).join('')}
       </tbody>
     </table></div>
-    <div class="note-box" style="margin-top:12px;">Everyone else already registered for the alliance will be marked as <strong>not participated</strong> in this event. Rows marked "Not found" will be added as <strong>new players with 0 power</strong> (fix the name, power and type afterwards using Edit in the Players tab). Uncheck any row you don't want applied.</div>
-    <button class="btn-primary btn-small" id="applyBulkBtn" style="margin-top:8px;">Confirm &amp; apply</button>
+    <div class="note-box" style="margin-top:12px;">Everyone else already registered for the alliance (not in this list) will be marked as <strong>not participated</strong> in this event. Names not yet in the Players tab will be added automatically with 0 power — fix their power/type afterwards using Edit.</div>
+    <button class="btn-primary" id="applyBulkBtn" style="width:100%;margin-top:10px;">💾 Save participation for this event</button>
     <div class="status-msg" id="bulkApplyStatus"></div>
   `;
 
   document.getElementById('applyBulkBtn').addEventListener('click', async () => {
     const statusEl = document.getElementById('bulkApplyStatus');
-    statusEl.textContent = 'Applying…';
+    statusEl.textContent = 'Saving…';
     statusEl.className = 'status-msg';
-    const checkedIdx = new Set();
-    preview.querySelectorAll('input.bulk-mark:checked').forEach(cb => checkedIdx.add(parseInt(cb.dataset.idx, 10)));
+    const yesIdx = new Set();
+    preview.querySelectorAll('select.bulk-mark').forEach(sel => { if(sel.value === 'yes') yesIdx.add(parseInt(sel.dataset.idx, 10)); });
 
     try {
       const newIdxToKey = {};
       const createPromises = [];
       matches.forEach((m, i) => {
-        if(!m.pid && checkedIdx.has(i)){
+        if(!m.pid){
           const ref = db.ref(`${ROOT}/players`).push();
           newIdxToKey[i] = ref.key;
           createPromises.push(ref.set({ name: m.line, power: 0, type: 'Tank', ts: Date.now() }));
@@ -886,7 +911,7 @@ document.getElementById('matchBulkBtn').addEventListener('click', () => {
 
       const confirmedIds = new Set();
       matches.forEach((m, i) => {
-        if(!checkedIdx.has(i)) return;
+        if(!yesIdx.has(i)) return;
         if(m.pid) confirmedIds.add(m.pid);
         else if(newIdxToKey[i]) confirmedIds.add(newIdxToKey[i]);
       });
@@ -898,7 +923,7 @@ document.getElementById('matchBulkBtn').addEventListener('click', () => {
       await db.ref(`${ROOT}/participationNotes/${evId}`).set(raw);
 
       const addedCount = createPromises.length;
-      statusEl.textContent = 'Participation updated' + (addedCount ? ` — ${addedCount} new player(s) added with 0 power. Fix their names/power/type in the Players tab.` : '.');
+      statusEl.textContent = 'Participation saved' + (addedCount ? ` — ${addedCount} new player(s) added with 0 power. Fix their power/type in the Players tab.` : '.');
       statusEl.className = 'status-msg ok';
     } catch(err) {
       statusEl.textContent = 'Error: ' + err.message;
